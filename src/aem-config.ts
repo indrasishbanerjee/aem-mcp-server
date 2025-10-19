@@ -2,6 +2,22 @@
 /// <reference types="node" />
 
 export interface AEMConfig {
+  host: string;
+  author: string;
+  publish: string;
+  serviceUser: {
+    username: string;
+    password: string;
+  };
+  endpoints: {
+    content: string;
+    dam: string;
+    query: string;
+    crxde: string;
+    jcr: string;
+    replicate: string;
+    wcmcommand: string;
+  };
   contentPaths: {
     sitesRoot: string;
     assetsRoot: string;
@@ -25,9 +41,27 @@ export interface AEMConfig {
     maxDepth: number;
     allowedLocales: string[];
   };
+  siteName?: string;
+  strictReplication?: boolean;
 }
 
 export const DEFAULT_AEM_CONFIG: AEMConfig = {
+  host: process.env.AEM_HOST || 'http://localhost:4502',
+  author: process.env.AEM_AUTHOR || 'http://localhost:4502',
+  publish: process.env.AEM_PUBLISH || 'http://localhost:4503',
+  serviceUser: {
+    username: process.env.AEM_SERVICE_USER || 'admin',
+    password: process.env.AEM_SERVICE_PASSWORD || 'admin',
+  },
+  endpoints: {
+    content: '/content',
+    dam: '/content/dam',
+    query: '/bin/querybuilder.json',
+    crxde: '/crx/de',
+    jcr: '',
+    replicate: '/bin/replicate.json',
+    wcmcommand: '/bin/wcmcommand',
+  },
   contentPaths: {
     sitesRoot: process.env.AEM_SITES_ROOT || '/content',
     assetsRoot: process.env.AEM_ASSETS_ROOT || '/content/dam',
@@ -56,6 +90,8 @@ export const DEFAULT_AEM_CONFIG: AEMConfig = {
     maxDepth: parseInt(process.env.AEM_MAX_DEPTH || '5'),
     allowedLocales: ['en'],
   },
+  siteName: process.env.AEM_SITE_NAME || 'we-retail',
+  strictReplication: process.env.AEM_STRICT_REPLICATION === 'true',
 };
 
 export function getAEMConfig(): AEMConfig {

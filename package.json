@@ -8,10 +8,17 @@
     "start": "node dist/index.js",
     "dev": "ts-node-dev src/index.ts",
     "mcp": "node dist/mcp-server.js",
-    "test": "npm run build && node dist/tests/run-tests.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPattern=__tests__",
+    "test:integration": "npm run build && node dist/tests/run-tests.js",
     "test:quick": "npm run build && node dist/tests/run-tests.js -- --quick",
     "test:verbose": "npm run build && node dist/tests/run-tests.js -- --verbose",
-    "test:report": "npm run build && node dist/tests/run-tests.js -- --output test-report --format html"
+    "test:report": "npm run build && node dist/tests/run-tests.js -- --output test-report --format html",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.19.0",
@@ -25,10 +32,19 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@jest/globals": "^29.7.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.11.17",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.2.5",
+    "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"

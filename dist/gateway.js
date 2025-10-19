@@ -492,3 +492,4 @@ export async function startGateway() {
         console.error(`🚀 AEM MCP Gateway Server running on port ${GATEWAY_PORT}`);
     });
 }
+//# sourceMappingURL=gateway.js.map

@@ -131,3 +131,18 @@ export function createErrorResponse(error, operation) {
         }
     };
 }
+export function isValidContentPath(path, config) {
+    if (!path || typeof path !== 'string') {
+        return false;
+    }
+    // Basic validation - should start with /content
+    return path.startsWith('/content');
+}
+export function isValidComponentType(componentType) {
+    if (!componentType || typeof componentType !== 'string') {
+        return false;
+    }
+    // Basic validation - should be a valid component path
+    return componentType.startsWith('/') || componentType.includes('/');
+}
+//# sourceMappingURL=error-handler.js.map

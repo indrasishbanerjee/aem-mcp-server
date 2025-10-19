@@ -267,3 +267,4 @@ export function loggingMiddleware(req, res, next) {
     next();
 }
 export default logger;
+//# sourceMappingURL=logger.js.map

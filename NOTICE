@@ -1,0 +1,220 @@
+# NOTICE
+
+This file contains the licenses and attributions for third-party software components used in the AEM MCP Server project.
+
+## Third-Party Software Components
+
+### Production Dependencies
+
+#### @anthropic-ai/sdk (^0.19.0)
+- **License**: MIT License
+- **Copyright**: Anthropic PBC
+- **Purpose**: Anthropic AI SDK for Claude API integration
+- **Repository**: https://github.com/anthropics/anthropic-sdk-typescript
+- **License Text**: Available at https://github.com/anthropics/anthropic-sdk-typescript/blob/main/LICENSE
+
+#### @modelcontextprotocol/sdk (^1.15.0)
+- **License**: Apache License 2.0
+- **Copyright**: Model Context Protocol Contributors
+- **Purpose**: Model Context Protocol SDK for MCP server implementation
+- **Repository**: https://github.com/modelcontextprotocol/sdk
+- **License Text**: Available at https://github.com/modelcontextprotocol/sdk/blob/main/LICENSE
+
+#### axios (^1.6.7)
+- **License**: MIT License
+- **Copyright**: Matt Zabriskie
+- **Purpose**: HTTP client for making requests to AEM instances
+- **Repository**: https://github.com/axios/axios
+- **License Text**: Available at https://github.com/axios/axios/blob/main/LICENSE
+
+#### cors (^2.8.5)
+- **License**: MIT License
+- **Copyright**: Troy Goode
+- **Purpose**: Cross-Origin Resource Sharing middleware for Express
+- **Repository**: https://github.com/expressjs/cors
+- **License Text**: Available at https://github.com/expressjs/cors/blob/master/LICENSE
+
+#### dotenv (^16.4.5)
+- **License**: BSD-2-Clause License
+- **Copyright**: Scott Motte
+- **Purpose**: Environment variable configuration loader
+- **Repository**: https://github.com/motdotla/dotenv
+- **License Text**: Available at https://github.com/motdotla/dotenv/blob/main/LICENSE
+
+#### express (^4.21.2)
+- **License**: MIT License
+- **Copyright**: Express.js contributors
+- **Purpose**: Web application framework for REST API endpoints
+- **Repository**: https://github.com/expressjs/express
+- **License Text**: Available at https://github.com/expressjs/express/blob/master/LICENSE
+
+#### openai (^4.30.0)
+- **License**: MIT License
+- **Copyright**: OpenAI, Inc.
+- **Purpose**: OpenAI API client for AI model integration
+- **Repository**: https://github.com/openai/openai-node
+- **License Text**: Available at https://github.com/openai/openai-node/blob/main/LICENSE
+
+#### swagger-jsdoc (^6.2.8)
+- **License**: MIT License
+- **Copyright**: Surnet
+- **Purpose**: Generate Swagger/OpenAPI documentation from JSDoc comments
+- **Repository**: https://github.com/Surnet/swagger-jsdoc
+- **License Text**: Available at https://github.com/Surnet/swagger-jsdoc/blob/master/LICENSE
+
+#### swagger-ui-express (^5.0.1)
+- **License**: MIT License
+- **Copyright**: Surnet
+- **Purpose**: Serve Swagger UI documentation for REST API
+- **Repository**: https://github.com/scottie1984/swagger-ui-express
+- **License Text**: Available at https://github.com/scottie1984/swagger-ui-express/blob/master/LICENSE
+
+### Referenced Projects
+
+#### aem-mcp-handler-docs
+- **License**: MIT License
+- **Copyright**: venky7799
+- **Purpose**: Documentation and reference implementation for AEM MCP Handler
+- **Repository**: https://github.com/venky7799/aem-mcp-handler-docs
+- **License Text**: Available at https://github.com/venky7799/aem-mcp-handler-docs/blob/main/LICENSE
+- **Attribution**: This project references and builds upon concepts and documentation from the aem-mcp-handler-docs repository.
+
+### Development Dependencies
+
+#### @jest/globals (^29.7.0)
+- **License**: MIT License
+- **Copyright**: Facebook, Inc.
+- **Purpose**: Jest testing framework globals
+- **Repository**: https://github.com/jestjs/jest
+- **License Text**: Available at https://github.com/jestjs/jest/blob/main/LICENSE
+
+#### @types/cors (^2.8.19)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for cors
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @types/express (^5.0.3)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for Express
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @types/jest (^29.5.12)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for Jest
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @types/node (^20.11.17)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for Node.js
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @types/swagger-jsdoc (^6.0.4)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for swagger-jsdoc
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @types/swagger-ui-express (^4.1.8)
+- **License**: MIT License
+- **Copyright**: DefinitelyTyped contributors
+- **Purpose**: TypeScript type definitions for swagger-ui-express
+- **Repository**: https://github.com/DefinitelyTyped/DefinitelyTyped
+- **License Text**: Available at https://github.com/DefinitelyTyped/DefinitelyTyped/blob/master/LICENSE
+
+#### @typescript-eslint/eslint-plugin (^7.1.1)
+- **License**: MIT License
+- **Copyright**: TypeScript ESLint contributors
+- **Purpose**: ESLint plugin for TypeScript
+- **Repository**: https://github.com/typescript-eslint/typescript-eslint
+- **License Text**: Available at https://github.com/typescript-eslint/typescript-eslint/blob/main/LICENSE
+
+#### @typescript-eslint/parser (^7.1.1)
+- **License**: MIT License
+- **Copyright**: TypeScript ESLint contributors
+- **Purpose**: ESLint parser for TypeScript
+- **Repository**: https://github.com/typescript-eslint/typescript-eslint
+- **License Text**: Available at https://github.com/typescript-eslint/typescript-eslint/blob/main/LICENSE
+
+#### eslint (^8.57.0)
+- **License**: MIT License
+- **Copyright**: OpenJS Foundation
+- **Purpose**: JavaScript/TypeScript linter
+- **Repository**: https://github.com/eslint/eslint
+- **License Text**: Available at https://github.com/eslint/eslint/blob/main/LICENSE
+
+#### jest (^29.7.0)
+- **License**: MIT License
+- **Copyright**: Facebook, Inc.
+- **Purpose**: JavaScript testing framework
+- **Repository**: https://github.com/jestjs/jest
+- **License Text**: Available at https://github.com/jestjs/jest/blob/main/LICENSE
+
+#### prettier (^3.2.5)
+- **License**: MIT License
+- **Copyright**: James Long and contributors
+- **Purpose**: Code formatter
+- **Repository**: https://github.com/prettier/prettier
+- **License Text**: Available at https://github.com/prettier/prettier/blob/main/LICENSE
+
+#### ts-jest (^29.1.2)
+- **License**: MIT License
+- **Copyright**: TypeScript Jest contributors
+- **Purpose**: TypeScript preprocessor for Jest
+- **Repository**: https://github.com/kulshekhar/ts-jest
+- **License Text**: Available at https://github.com/kulshekhar/ts-jest/blob/main/LICENSE
+
+#### ts-node (^10.9.2)
+- **License**: MIT License
+- **Copyright**: TypeStrong contributors
+- **Purpose**: TypeScript execution environment for Node.js
+- **Repository**: https://github.com/TypeStrong/ts-node
+- **License Text**: Available at https://github.com/TypeStrong/ts-node/blob/main/LICENSE
+
+#### ts-node-dev (^2.0.0)
+- **License**: MIT License
+- **Copyright**: TypeStrong contributors
+- **Purpose**: TypeScript development server with hot reloading
+- **Repository**: https://github.com/wclr/ts-node-dev
+- **License Text**: Available at https://github.com/wclr/ts-node-dev/blob/master/LICENSE
+
+#### typescript (^5.8.3)
+- **License**: Apache License 2.0
+- **Copyright**: Microsoft Corporation
+- **Purpose**: TypeScript compiler and language services
+- **Repository**: https://github.com/microsoft/TypeScript
+- **License Text**: Available at https://github.com/microsoft/TypeScript/blob/main/LICENSE.txt
+
+## License Summary
+
+This project uses the following license types:
+
+- **MIT License**: Used by most dependencies (axios, express, jest, prettier, etc.)
+- **Apache License 2.0**: Used by @modelcontextprotocol/sdk and TypeScript
+- **BSD-2-Clause License**: Used by dotenv
+
+All third-party components are used in accordance with their respective licenses.
+
+## Copyright Notice
+
+Copyright (c) 2024 AEM MCP Server Contributors
+
+This software is provided "as is" without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose and noninfringement.
+
+## Disclaimer
+
+The third-party software components listed above are used under their respective open source licenses. The authors and copyright holders of these components are not responsible for the use of their software in this project.
+
+For the complete license texts of the third-party components, please refer to their respective repositories or the node_modules directory after installation.
+
+## Contact
+
+For questions about this NOTICE file or the licensing of third-party components, please contact the project maintainers.

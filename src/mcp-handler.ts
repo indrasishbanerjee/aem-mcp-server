@@ -51,16 +51,11 @@ export class MCPRequestHandler {
         case 'getAssetMetadata':
           return await this.aemConnector.getAssetMetadata(params.assetPath);
         case 'getStatus':
-          return this.getWorkflowStatus(params.workflowId);
+          return await this.aemConnector.getWorkflowStatus(params.workflowId);
         case 'listMethods':
           return { methods: this.getAvailableMethods() };
         case 'enhancedPageSearch':
-          return await this.aemConnector.searchContent({
-            fulltext: params.searchTerm,
-            path: params.basePath,
-            type: 'cq:Page',
-            limit: 20
-          });
+          return await this.aemConnector.enhancedPageSearch(params);
         case 'createPage':
           return await this.aemConnector.createPage(params);
         case 'deletePage':
@@ -87,6 +82,30 @@ export class MCPRequestHandler {
           return await this.aemConnector.getTemplateStructure(params.templatePath);
         case 'bulkUpdateComponents':
           return await this.aemConnector.bulkUpdateComponents(params);
+        case 'startWorkflow':
+          return await this.aemConnector.startWorkflow(params);
+        case 'listActiveWorkflows':
+          return await this.aemConnector.listActiveWorkflows(params.limit);
+        case 'completeWorkflowStep':
+          return await this.aemConnector.completeWorkflowStep(params.workflowId, params.stepName, params.comment);
+        case 'cancelWorkflow':
+          return await this.aemConnector.cancelWorkflow(params.workflowId, params.reason);
+        case 'suspendWorkflow':
+          return await this.aemConnector.suspendWorkflow(params.workflowId, params.reason);
+        case 'resumeWorkflow':
+          return await this.aemConnector.resumeWorkflow(params.workflowId);
+        case 'getWorkflowModels':
+          return await this.aemConnector.getWorkflowModels();
+        case 'getVersionHistory':
+          return await this.aemConnector.getVersionHistory(params.path);
+        case 'createVersion':
+          return await this.aemConnector.createVersion(params.path, params.label, params.comment);
+        case 'restoreVersion':
+          return await this.aemConnector.restoreVersion(params.path, params.versionName);
+        case 'compareVersions':
+          return await this.aemConnector.compareVersions(params.path, params.version1, params.version2);
+        case 'deleteVersion':
+          return await this.aemConnector.deleteVersion(params.path, params.versionName);
         default:
           throw new Error(`Unknown method: ${method}`);
       }
@@ -95,15 +114,6 @@ export class MCPRequestHandler {
     }
   }
 
-  getWorkflowStatus(workflowId: string) {
-    return {
-      success: true,
-      workflowId: workflowId,
-      status: 'completed',
-      message: 'Mock workflow status - always returns completed',
-      timestamp: new Date().toISOString()
-    };
-  }
 
   getAvailableMethods() {
     return [
@@ -143,6 +153,18 @@ export class MCPRequestHandler {
       { name: 'getTemplates', description: 'Get available page templates', parameters: ['sitePath'] },
       { name: 'getTemplateStructure', description: 'Get detailed structure of a specific template', parameters: ['templatePath'] },
       { name: 'bulkUpdateComponents', description: 'Update multiple components in a single operation with validation and rollback support', parameters: ['updates', 'validateFirst', 'continueOnError'] },
+      { name: 'startWorkflow', description: 'Start a new workflow instance', parameters: ['model', 'payloadPath', 'title', 'comment'] },
+      { name: 'listActiveWorkflows', description: 'List all currently running workflow instances', parameters: ['limit'] },
+      { name: 'completeWorkflowStep', description: 'Complete a workflow step', parameters: ['workflowId', 'stepName', 'comment'] },
+      { name: 'cancelWorkflow', description: 'Cancel a workflow instance', parameters: ['workflowId', 'reason'] },
+      { name: 'suspendWorkflow', description: 'Suspend a workflow instance', parameters: ['workflowId', 'reason'] },
+      { name: 'resumeWorkflow', description: 'Resume a suspended workflow instance', parameters: ['workflowId'] },
+      { name: 'getWorkflowModels', description: 'Get all available workflow models', parameters: [] },
+      { name: 'getVersionHistory', description: 'Get version history for a content path', parameters: ['path'] },
+      { name: 'createVersion', description: 'Create a new version of content', parameters: ['path', 'label', 'comment'] },
+      { name: 'restoreVersion', description: 'Restore content to a specific version', parameters: ['path', 'versionName'] },
+      { name: 'compareVersions', description: 'Compare two versions of content', parameters: ['path', 'version1', 'version2'] },
+      { name: 'deleteVersion', description: 'Delete a specific version', parameters: ['path', 'versionName'] },
     ];
   }
 } 

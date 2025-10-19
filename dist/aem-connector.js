@@ -2,11 +2,15 @@ import axios from 'axios';
 import dotenv from 'dotenv';
 import { getAEMConfig, isValidContentPath, isValidComponentType, isValidLocale } from './aem-config.js';
 import { createAEMError, handleAEMHttpError, safeExecute, validateComponentOperation, createSuccessResponse, AEM_ERROR_CODES } from './error-handler.js';
+import { WorkflowOperations } from './operations/workflow-operations.js';
+import { VersionOperations } from './operations/version-operations.js';
 dotenv.config();
 export class AEMConnector {
     config;
     auth;
     aemConfig;
+    workflowOps;
+    versionOps;
     constructor() {
         this.config = this.loadConfig();
         this.aemConfig = getAEMConfig();
@@ -18,6 +22,8 @@ export class AEMConnector {
             this.config.aem.host = process.env.AEM_HOST;
             this.config.aem.author = process.env.AEM_HOST;
         }
+        this.workflowOps = new WorkflowOperations(this.createAxiosInstance(), console, this.aemConfig);
+        this.versionOps = new VersionOperations(this.createAxiosInstance(), console, this.aemConfig);
     }
     loadConfig() {
         return {
@@ -194,12 +200,54 @@ export class AEMConnector {
         }, 'updateComponent');
     }
     async undoChanges(request) {
-        // Not implemented: AEM MCP does not support undo/rollback. Use AEM version history.
-        return createSuccessResponse({
-            message: 'undoChanges is not implemented. Please use AEM version history for undo/rollback.',
-            request,
-            timestamp: new Date().toISOString(),
-        }, 'undoChanges');
+        // Use the real version operations implementation
+        return this.versionOps.undoChanges(request);
+    }
+    // Workflow Operations - Real implementations
+    async startWorkflow(request) {
+        return this.workflowOps.startWorkflow(request);
+    }
+    async getWorkflowStatus(workflowId) {
+        return this.workflowOps.getWorkflowStatus(workflowId);
+    }
+    async completeWorkflowStep(workflowId, stepName, comment) {
+        return this.workflowOps.completeWorkflowStep(workflowId, stepName, comment);
+    }
+    async cancelWorkflow(workflowId, reason) {
+        return this.workflowOps.cancelWorkflow(workflowId, reason);
+    }
+    async listActiveWorkflows(limit) {
+        return this.workflowOps.listActiveWorkflows(limit);
+    }
+    async suspendWorkflow(workflowId, reason) {
+        return this.workflowOps.suspendWorkflow(workflowId, reason);
+    }
+    async resumeWorkflow(workflowId) {
+        return this.workflowOps.resumeWorkflow(workflowId);
+    }
+    async getWorkflowModels() {
+        return this.workflowOps.getWorkflowModels();
+    }
+    // Version Operations - Real implementations
+    async getVersionHistory(path) {
+        return this.versionOps.getVersionHistory(path);
+    }
+    async createVersion(path, label, comment) {
+        return this.versionOps.createVersion(path, label, comment);
+    }
+    async restoreVersion(path, versionName) {
+        return this.versionOps.restoreVersion(path, versionName);
+    }
+    async compareVersions(path, version1, version2) {
+        return this.versionOps.compareVersions(path, version1, version2);
+    }
+    async deleteVersion(path, versionName) {
+        return this.versionOps.deleteVersion(path, versionName);
+    }
+    async enhancedPageSearch(params) {
+        // Use the search operations for enhanced page search
+        const searchOps = new (await import('./operations/search-operations.js')).SearchOperations(this.createAxiosInstance(), console, this.aemConfig);
+        return searchOps.enhancedPageSearch(params);
     }
     async scanPageComponents(pagePath) {
         return safeExecute(async () => {
@@ -308,15 +356,9 @@ export class AEMConnector {
         }, 'fetchAvailableLocales');
     }
     async replicateAndPublish(selectedLocales, componentData, localizedOverrides) {
-        // Simulate replication logic for now
-        return safeExecute(async () => {
-            return createSuccessResponse({
-                message: 'Replication simulated',
-                selectedLocales,
-                componentData,
-                localizedOverrides,
-            }, 'replicateAndPublish');
-        }, 'replicateAndPublish');
+        // Use the real replication implementation from ReplicationOperations
+        const replicationOps = new (await import('./operations/replication-operations.js')).ReplicationOperations(this.createAxiosInstance(), console, this.aemConfig);
+        return replicationOps.replicateAndPublish(selectedLocales, componentData, localizedOverrides);
     }
     async getAllTextContent(pagePath) {
         return safeExecute(async () => {
@@ -1586,3 +1628,4 @@ export class AEMConnector {
         console.log('🗑️ Template cache cleared');
     }
 }
+//# sourceMappingURL=aem-connector.js.map

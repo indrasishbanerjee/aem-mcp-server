@@ -1,6 +1,22 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference types="node" />
 export const DEFAULT_AEM_CONFIG = {
+    host: process.env.AEM_HOST || 'http://localhost:4502',
+    author: process.env.AEM_AUTHOR || 'http://localhost:4502',
+    publish: process.env.AEM_PUBLISH || 'http://localhost:4503',
+    serviceUser: {
+        username: process.env.AEM_SERVICE_USER || 'admin',
+        password: process.env.AEM_SERVICE_PASSWORD || 'admin',
+    },
+    endpoints: {
+        content: '/content',
+        dam: '/content/dam',
+        query: '/bin/querybuilder.json',
+        crxde: '/crx/de',
+        jcr: '',
+        replicate: '/bin/replicate.json',
+        wcmcommand: '/bin/wcmcommand',
+    },
     contentPaths: {
         sitesRoot: process.env.AEM_SITES_ROOT || '/content',
         assetsRoot: process.env.AEM_ASSETS_ROOT || '/content/dam',
@@ -29,6 +45,8 @@ export const DEFAULT_AEM_CONFIG = {
         maxDepth: parseInt(process.env.AEM_MAX_DEPTH || '5'),
         allowedLocales: ['en'],
     },
+    siteName: process.env.AEM_SITE_NAME || 'we-retail',
+    strictReplication: process.env.AEM_STRICT_REPLICATION === 'true',
 };
 export function getAEMConfig() {
     return DEFAULT_AEM_CONFIG;
@@ -47,3 +65,4 @@ export function isValidLocale(locale, config = DEFAULT_AEM_CONFIG) {
     return config.validation.allowedLocales.some(l => l.toLowerCase() === normalized ||
         (normalized === 'en' && l.toLowerCase().startsWith('en')));
 }
+//# sourceMappingURL=aem-config.js.map

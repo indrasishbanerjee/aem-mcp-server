@@ -149,4 +149,20 @@ export function createErrorResponse(error: AEMOperationError, operation: string)
       retryAfter: error.retryAfter
     }
   };
+}
+
+export function isValidContentPath(path: string, config?: any): boolean {
+  if (!path || typeof path !== 'string') {
+    return false;
+  }
+  // Basic validation - should start with /content
+  return path.startsWith('/content');
+}
+
+export function isValidComponentType(componentType: string): boolean {
+  if (!componentType || typeof componentType !== 'string') {
+    return false;
+  }
+  // Basic validation - should be a valid component path
+  return componentType.startsWith('/') || componentType.includes('/');
 } 

@@ -425,6 +425,144 @@ const tools = [
             required: ['updates'],
         },
     },
+    {
+        name: 'startWorkflow',
+        description: 'Start a new workflow instance',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                model: { type: 'string' },
+                payloadPath: { type: 'string' },
+                title: { type: 'string' },
+                comment: { type: 'string' }
+            },
+            required: ['model', 'payloadPath'],
+        },
+    },
+    {
+        name: 'listActiveWorkflows',
+        description: 'List all currently running workflow instances',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                limit: { type: 'number' }
+            }
+        },
+    },
+    {
+        name: 'completeWorkflowStep',
+        description: 'Complete a workflow step',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                workflowId: { type: 'string' },
+                stepName: { type: 'string' },
+                comment: { type: 'string' }
+            },
+            required: ['workflowId', 'stepName'],
+        },
+    },
+    {
+        name: 'cancelWorkflow',
+        description: 'Cancel a workflow instance',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                workflowId: { type: 'string' },
+                reason: { type: 'string' }
+            },
+            required: ['workflowId'],
+        },
+    },
+    {
+        name: 'suspendWorkflow',
+        description: 'Suspend a workflow instance',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                workflowId: { type: 'string' },
+                reason: { type: 'string' }
+            },
+            required: ['workflowId'],
+        },
+    },
+    {
+        name: 'resumeWorkflow',
+        description: 'Resume a suspended workflow instance',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                workflowId: { type: 'string' }
+            },
+            required: ['workflowId'],
+        },
+    },
+    {
+        name: 'getWorkflowModels',
+        description: 'Get all available workflow models',
+        inputSchema: { type: 'object', properties: {} },
+    },
+    {
+        name: 'getVersionHistory',
+        description: 'Get version history for a content path',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                path: { type: 'string' }
+            },
+            required: ['path'],
+        },
+    },
+    {
+        name: 'createVersion',
+        description: 'Create a new version of content',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                path: { type: 'string' },
+                label: { type: 'string' },
+                comment: { type: 'string' }
+            },
+            required: ['path'],
+        },
+    },
+    {
+        name: 'restoreVersion',
+        description: 'Restore content to a specific version',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                path: { type: 'string' },
+                versionName: { type: 'string' }
+            },
+            required: ['path', 'versionName'],
+        },
+    },
+    {
+        name: 'compareVersions',
+        description: 'Compare two versions of content',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                path: { type: 'string' },
+                version1: { type: 'string' },
+                version2: { type: 'string' }
+            },
+            required: ['path', 'version1', 'version2'],
+        },
+    },
+    {
+        name: 'deleteVersion',
+        description: 'Delete a specific version',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                path: { type: 'string' },
+                versionName: { type: 'string' }
+            },
+            required: ['path', 'versionName'],
+        },
+    },
 ];
 server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools };
@@ -541,7 +679,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
             case 'getStatus': {
-                const result = { success: true, workflowId: args.workflowId, status: 'completed', message: 'Mock workflow status - always returns completed', timestamp: new Date().toISOString() };
+                const result = await aemConnector.getWorkflowStatus(args.workflowId);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
             case 'listMethods': {
@@ -549,7 +687,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
             case 'enhancedPageSearch': {
-                const result = await aemConnector.searchContent({ fulltext: args.searchTerm, path: args.basePath, type: 'cq:Page', limit: 20 });
+                const result = await aemConnector.enhancedPageSearch(args);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
             case 'createPage': {
@@ -606,6 +744,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await aemConnector.bulkUpdateComponents(args);
                 return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
             }
+            case 'startWorkflow': {
+                const result = await aemConnector.startWorkflow(args);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'listActiveWorkflows': {
+                const limit = args.limit;
+                const result = await aemConnector.listActiveWorkflows(limit);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'completeWorkflowStep': {
+                const { workflowId, stepName, comment } = args;
+                const result = await aemConnector.completeWorkflowStep(workflowId, stepName, comment);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'cancelWorkflow': {
+                const { workflowId, reason } = args;
+                const result = await aemConnector.cancelWorkflow(workflowId, reason);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'suspendWorkflow': {
+                const { workflowId, reason } = args;
+                const result = await aemConnector.suspendWorkflow(workflowId, reason);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'resumeWorkflow': {
+                const workflowId = args.workflowId;
+                const result = await aemConnector.resumeWorkflow(workflowId);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'getWorkflowModels': {
+                const result = await aemConnector.getWorkflowModels();
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'getVersionHistory': {
+                const path = args.path;
+                const result = await aemConnector.getVersionHistory(path);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'createVersion': {
+                const { path, label, comment } = args;
+                const result = await aemConnector.createVersion(path, label, comment);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'restoreVersion': {
+                const { path, versionName } = args;
+                const result = await aemConnector.restoreVersion(path, versionName);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'compareVersions': {
+                const { path, version1, version2 } = args;
+                const result = await aemConnector.compareVersions(path, version1, version2);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
+            case 'deleteVersion': {
+                const { path, versionName } = args;
+                const result = await aemConnector.deleteVersion(path, versionName);
+                return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+            }
             default:
                 throw new Error(`Unknown tool: ${name}`);
         }
@@ -628,3 +824,4 @@ main().catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
 });
+//# sourceMappingURL=mcp-server.js.map

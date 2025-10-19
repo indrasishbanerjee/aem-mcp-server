@@ -10,6 +10,8 @@ import {
   createSuccessResponse,
   AEM_ERROR_CODES
 } from './error-handler.js';
+import { WorkflowOperations } from './operations/workflow-operations.js';
+import { VersionOperations } from './operations/version-operations.js';
 
 dotenv.config();
 
@@ -34,6 +36,8 @@ export class AEMConnector {
   config: AEMConnectorConfig;
   auth: { username: string; password: string };
   aemConfig: AEMConfig;
+  private workflowOps: WorkflowOperations;
+  private versionOps: VersionOperations;
 
   constructor() {
     this.config = this.loadConfig();
@@ -46,6 +50,8 @@ export class AEMConnector {
       this.config.aem.host = process.env.AEM_HOST;
       this.config.aem.author = process.env.AEM_HOST;
     }
+    this.workflowOps = new WorkflowOperations(this.createAxiosInstance(), console as any, this.aemConfig);
+    this.versionOps = new VersionOperations(this.createAxiosInstance(), console as any, this.aemConfig);
   }
 
   loadConfig(): AEMConnectorConfig {
@@ -226,12 +232,72 @@ export class AEMConnector {
   }
 
   async undoChanges(request: any): Promise<object> {
-    // Not implemented: AEM MCP does not support undo/rollback. Use AEM version history.
-    return createSuccessResponse({
-      message: 'undoChanges is not implemented. Please use AEM version history for undo/rollback.',
-      request,
-      timestamp: new Date().toISOString(),
-    }, 'undoChanges');
+    // Use the real version operations implementation
+    return this.versionOps.undoChanges(request);
+  }
+
+  // Workflow Operations - Real implementations
+  async startWorkflow(request: any): Promise<object> {
+    return this.workflowOps.startWorkflow(request);
+  }
+
+  async getWorkflowStatus(workflowId: string): Promise<object> {
+    return this.workflowOps.getWorkflowStatus(workflowId);
+  }
+
+  async completeWorkflowStep(workflowId: string, stepName: string, comment?: string): Promise<object> {
+    return this.workflowOps.completeWorkflowStep(workflowId, stepName, comment);
+  }
+
+  async cancelWorkflow(workflowId: string, reason?: string): Promise<object> {
+    return this.workflowOps.cancelWorkflow(workflowId, reason);
+  }
+
+  async listActiveWorkflows(limit?: number): Promise<object> {
+    return this.workflowOps.listActiveWorkflows(limit);
+  }
+
+  async suspendWorkflow(workflowId: string, reason?: string): Promise<object> {
+    return this.workflowOps.suspendWorkflow(workflowId, reason);
+  }
+
+  async resumeWorkflow(workflowId: string): Promise<object> {
+    return this.workflowOps.resumeWorkflow(workflowId);
+  }
+
+  async getWorkflowModels(): Promise<object> {
+    return this.workflowOps.getWorkflowModels();
+  }
+
+  // Version Operations - Real implementations
+  async getVersionHistory(path: string): Promise<object> {
+    return this.versionOps.getVersionHistory(path);
+  }
+
+  async createVersion(path: string, label?: string, comment?: string): Promise<object> {
+    return this.versionOps.createVersion(path, label, comment);
+  }
+
+  async restoreVersion(path: string, versionName: string): Promise<object> {
+    return this.versionOps.restoreVersion(path, versionName);
+  }
+
+  async compareVersions(path: string, version1: string, version2: string): Promise<object> {
+    return this.versionOps.compareVersions(path, version1, version2);
+  }
+
+  async deleteVersion(path: string, versionName: string): Promise<object> {
+    return this.versionOps.deleteVersion(path, versionName);
+  }
+
+  async enhancedPageSearch(params: any): Promise<object> {
+    // Use the search operations for enhanced page search
+    const searchOps = new (await import('./operations/search-operations.js')).SearchOperations(
+      this.createAxiosInstance(), 
+      console as any, 
+      this.aemConfig
+    );
+    return searchOps.enhancedPageSearch(params);
   }
 
   async scanPageComponents(pagePath: string): Promise<object> {
@@ -340,15 +406,13 @@ export class AEMConnector {
   }
 
   async replicateAndPublish(selectedLocales: any, componentData: any, localizedOverrides: any): Promise<object> {
-    // Simulate replication logic for now
-    return safeExecute<object>(async () => {
-      return createSuccessResponse({
-        message: 'Replication simulated',
-        selectedLocales,
-        componentData,
-        localizedOverrides,
-      }, 'replicateAndPublish');
-    }, 'replicateAndPublish');
+    // Use the real replication implementation from ReplicationOperations
+    const replicationOps = new (await import('./operations/replication-operations.js')).ReplicationOperations(
+      this.createAxiosInstance(), 
+      console as any, 
+      this.aemConfig
+    );
+    return replicationOps.replicateAndPublish(selectedLocales, componentData, localizedOverrides);
   }
 
   async getAllTextContent(pagePath: string): Promise<object> {
