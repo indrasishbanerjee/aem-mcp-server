@@ -4,7 +4,6 @@ Reach out to me on [LinkedIn](https://www.linkedin.com/in/indrasish/) or [Email 
 
 # AEM MCP Server (aem-mcp-server)
 
-[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node.js CI](https://img.shields.io/badge/node-%3E=18-blue.svg)](https://nodejs.org/)
 [![AEM Compatible](https://img.shields.io/badge/aem-6.5%2B-blue.svg)](https://www.adobe.com/marketing-cloud/experience-manager.html)
 [![TypeScript](https://img.shields.io/badge/typescript-5.8%2B-blue.svg)](https://www.typescriptlang.org/)
@@ -629,8 +628,9 @@ async function callMcpMethod(method, params) {
 | `VALIDATION_FAILED` | Content validation failed | No |
 
 ## License
-[MIT](LICENSE) 
+[AGPL-V3](LICENSE) 
 
-[![MCP Badge](https://lobehub.com/badge/mcp-full/indrasishbanerjee-aem-mcp-server)](https://lobehub.com/mcp/indrasishbanerjee-aem-mcp-server)
+
+
 
 
