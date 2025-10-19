@@ -2,7 +2,7 @@ Reach out to me on [LinkedIn](https://www.linkedin.com/in/indrasish/) or [Email 
 
 > **💡 For users interested in MCP server for AEM as a Cloud Service, check out my other GitHub project:** [**AEMaaCS MCP Server**](https://github.com/indrasishbanerjee/aemaacs-mcp-server) - A comprehensive read and write MCP server specifically designed for AEM as a Cloud Service with advanced features and enterprise-grade capabilities.
 
-> **LICENSE UPDATE** : This project is now licensed under [AGPL-V3](LICENSE) 
+> **LICENSE UPDATE** : This project is now licensed under [AGPL-V3](LICENSE) For commercial use in enterprise environments, a paid license is required.
 
 # AEM MCP Server (aem-mcp-server)
 
@@ -631,6 +631,7 @@ async function callMcpMethod(method, params) {
 
 ## License
 [AGPL-V3](LICENSE) 
+
 
 
 
