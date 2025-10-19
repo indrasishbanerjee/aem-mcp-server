@@ -1,5 +1,7 @@
 Reach out to me on [LinkedIn](https://www.linkedin.com/in/indrasish/) or [Email Me](mailto:indrasish00@gmail.com) to discuss customizations !
 
+> **💡 For users interested in MCP server for AEM as a Cloud Service, check out my other GitHub project:** [**AEMaaCS MCP Server**](https://github.com/indrasishbanerjee/aemaacs-mcp-server) - A comprehensive read and write MCP server specifically designed for AEM as a Cloud Service with advanced features and enterprise-grade capabilities.
+
 # AEM MCP Server (aem-mcp-server)
 
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
