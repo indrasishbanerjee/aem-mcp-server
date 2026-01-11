@@ -19,8 +19,3 @@
  * See COMMERCIAL_LICENSE.md for details.
  */
 
-import { startGateway } from './gateway.js';
-
-(async () => {
-  await startGateway();
-})(); 

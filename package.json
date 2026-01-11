@@ -49,5 +49,11 @@
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   },
-  "type": "module"
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "author": "Indrasish Banerjee",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/indra/aem-mcp-server"
+  }
 }

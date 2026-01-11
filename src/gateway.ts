@@ -1,3 +1,24 @@
+/**
+ * AEM MCP Server
+ * Copyright (C) 2025 Indra
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ * 
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * For commercial licensing options, please contact: indrasish00@gmail.com
+ * See COMMERCIAL_LICENSE.md for details.
+ */
+
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { join, dirname } from 'path';
@@ -531,6 +552,22 @@ app.get('/openapi.json', (req: express.Request, res: express.Response) => { res.
 export async function startGateway() {
   app.listen(GATEWAY_PORT, () => {
     // eslint-disable-next-line no-console
-    console.error(`🚀 AEM MCP Gateway Server running on port ${GATEWAY_PORT}`);
+    console.log('\n' + '='.repeat(80));
+    console.log('🚀 AEM MCP Server - Gateway Started');
+    console.log('='.repeat(80));
+    console.log(`📡 Gateway Port: ${GATEWAY_PORT}`);
+    console.log(`📡 MCP Port: ${MCP_PORT}`);
+    console.log(`📚 API Documentation: http://localhost:${GATEWAY_PORT}/api-docs`);
+    console.log(`🎛️  Dashboard: http://localhost:${GATEWAY_PORT}/dashboard`);
+    console.log('='.repeat(80));
+    console.log('📜 LICENSE: AGPL-3.0-or-later');
+    console.log('   This program comes with ABSOLUTELY NO WARRANTY.');
+    console.log('   This is free software, and you are welcome to redistribute it');
+    console.log('   under certain conditions. See LICENSE file for details.');
+    console.log('');
+    console.log('💼 Commercial Licensing Available');
+    console.log('   For use without AGPL obligations, contact: indrasish00@gmail.com');
+    console.log('   See COMMERCIAL_LICENSE.md for details.');
+    console.log('='.repeat(80) + '\n');
   });
 } 

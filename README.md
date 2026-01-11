@@ -2,7 +2,7 @@ Reach out to me on [LinkedIn](https://www.linkedin.com/in/indrasish/) or [Email 
 
 > **💡 For users interested in MCP server for AEM as a Cloud Service, check out my other GitHub project:** [**AEMaaCS MCP Server**](https://github.com/indrasishbanerjee/aemaacs-mcp-server) - A comprehensive read and write MCP server specifically designed for AEM as a Cloud Service with advanced features and enterprise-grade capabilities.
 
-> **LICENSE UPDATE** : This project is now licensed under [AGPL-V3](LICENSE) For commercial use in enterprise environments, a paid license is required.
+> **📜 DUAL LICENSING**: This project is licensed under [AGPL-3.0](LICENSE) for open source use. **Commercial licenses are available** for organizations that need to use this software without AGPL obligations. See [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) for details.
 
 # AEM MCP Server (aem-mcp-server)
 
@@ -630,7 +630,48 @@ async function callMcpMethod(method, params) {
 | `VALIDATION_FAILED` | Content validation failed | No |
 
 ## License
-[AGPL-V3](LICENSE) 
+
+### Open Source License (AGPL-3.0)
+
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+**What this means:**
+- ✅ Free to use, modify, and distribute
+- ✅ If you run a modified version as a network service, you **must provide source code** to users
+- ✅ All modifications must also be licensed under AGPL-3.0
+- ✅ Perfect for open source projects and internal use
+
+**Read the full license:** [LICENSE](LICENSE)
+
+### Commercial License
+
+**Need to use this software without AGPL obligations?**
+
+We offer commercial licenses for organizations that want to:
+- ❌ Keep modifications private
+- ❌ Integrate into proprietary systems without source disclosure
+- ✅ Get priority support and custom features
+- ✅ Receive legal protection and indemnification
+
+**Pricing starts at $X,XXX/year** with a **free 30-day evaluation license**.
+
+**Learn more:** [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md)
+
+**Contact for commercial licensing:**
+- 📧 Email: [indrasish00@gmail.com](mailto:indrasish00@gmail.com)
+- 💼 LinkedIn: [linkedin.com/in/indrasish/](https://www.linkedin.com/in/indrasish/)
+
+---
+
+### Why Dual Licensing?
+
+This model allows us to:
+1. **Support the open source community** with free, powerful tools
+2. **Provide enterprise-grade support** for commercial users
+3. **Continue development** with sustainable funding
+4. **Ensure compliance** with clear licensing terms
+
+If you're unsure which license you need, [contact us](mailto:indrasish00@gmail.com) for guidance. 
 
 
 
