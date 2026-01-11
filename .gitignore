@@ -1,0 +1,10 @@
+/.kiro
+logs/comprehensive-test-report.json
+logs/aem-mcp-2025-07-20.log
+logs/aem-mcp-2025-07-21.log
+logs/issue-log-update.md
+logs/issue-log.md
+.vscode/settings.json
+MOCK_IMPLEMENTATIONS_FIXED.md
+IMPLEMENTATION_SUMMARY.md
+README-ENHANCED.md
