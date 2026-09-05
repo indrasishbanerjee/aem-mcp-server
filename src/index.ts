@@ -1,26 +1,25 @@
-/**
- * AEM MCP Server
- * Copyright (C) 2025 Indra
- * 
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- * 
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
- * For commercial licensing options, please contact: indrasish00@gmail.com
- * See COMMERCIAL_LICENSE.md for details.
- */
+import dotenv from 'dotenv';
+import { loadConfig } from './config.js';
+import { Logger } from './logger.js';
+import { AemConnector } from './aem/connector.js';
+import { startGateway } from './http/gateway.js';
 
-import { startGateway } from './gateway.js';
+dotenv.config();
 
-(async () => {
-  await startGateway();
-})(); 
+async function main(): Promise<void> {
+  const config = loadConfig();
+  const logger = new Logger(config.logging);
+  const aem = new AemConnector(config, logger);
+  if (!config.http.enabled) {
+    logger.error('HTTP gateway disabled. Use npm run mcp for stdio.');
+    process.exit(1);
+  }
+  await startGateway(config, logger, aem);
+}
+
+main().catch(error => {
+  process.stderr.write(
+    `Fatal gateway error: ${error instanceof Error ? error.message : String(error)}\n`
+  );
+  process.exit(1);
+});

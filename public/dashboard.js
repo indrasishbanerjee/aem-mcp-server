@@ -7,16 +7,46 @@ class AEMDashboard {
     }
 
     async init() {
+        this.restoreAuth();
+        document.getElementById('saveAuthBtn')?.addEventListener('click', () => this.saveAuth());
         await this.loadMethods();
         this.setupEventListeners();
         this.checkHealth();
-        // Check health every 30 seconds
         setInterval(() => this.checkHealth(), 30000);
+    }
+
+    restoreAuth() {
+        const apiKey = document.getElementById('mcpApiKey');
+        const user = document.getElementById('mcpUser');
+        const pass = document.getElementById('mcpPass');
+        if (apiKey) apiKey.value = sessionStorage.getItem('mcpApiKey') || '';
+        if (user) user.value = sessionStorage.getItem('mcpUser') || '';
+        if (pass) pass.value = sessionStorage.getItem('mcpPass') || '';
+    }
+
+    saveAuth() {
+        sessionStorage.setItem('mcpApiKey', document.getElementById('mcpApiKey')?.value || '');
+        sessionStorage.setItem('mcpUser', document.getElementById('mcpUser')?.value || '');
+        sessionStorage.setItem('mcpPass', document.getElementById('mcpPass')?.value || '');
+        this.loadMethods();
+    }
+
+    authHeaders(extra = {}) {
+        const headers = { ...extra };
+        const apiKey = sessionStorage.getItem('mcpApiKey');
+        const user = sessionStorage.getItem('mcpUser');
+        const pass = sessionStorage.getItem('mcpPass');
+        if (apiKey) {
+            headers['X-API-Key'] = apiKey;
+        } else if (user && pass) {
+            headers['Authorization'] = 'Basic ' + btoa(`${user}:${pass}`);
+        }
+        return headers;
     }
 
     async loadMethods() {
         try {
-            const response = await fetch('/api/methods');
+            const response = await fetch('/api/methods', { headers: this.authHeaders() });
             const data = await response.json();
             
             if (data.success) {
@@ -251,13 +281,10 @@ class AEMDashboard {
         
         try {
             // Fetch available templates for the path
-            const response = await fetch('/api/methods/getAvailableTemplates', {
+            const response = await fetch('/api/methods/getTemplates', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Basic ' + btoa('admin:admin')
-                },
-                body: JSON.stringify({ path: parentPath })
+                headers: this.authHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ sitePath: parentPath })
             });
 
             const result = await response.json();
@@ -397,10 +424,7 @@ class AEMDashboard {
             
             const response = await fetch(`/api/methods/${this.currentMethod.name}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Basic ' + btoa('admin:admin') // Default credentials
-                },
+                headers: this.authHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify(parameters)
             });
 
@@ -480,21 +504,16 @@ class AEMDashboard {
 
     generateCurlCommand(parameters) {
         const baseUrl = window.location.origin;
-        const jsonrpcPayload = {
-            jsonrpc: '2.0',
-            id: 1,
-            method: this.currentMethod.name,
-            params: parameters
-        };
 
-        return `# JSON-RPC API
-curl -u admin:admin \\
-  -X POST ${baseUrl}/mcp \\
+        return `# Streamable HTTP MCP (API key)
+curl -H "X-API-Key: $MCP_API_KEY" \\
   -H 'Content-Type: application/json' \\
-  -d '${JSON.stringify(jsonrpcPayload, null, 2)}'
+  -H 'Accept: application/json, text/event-stream' \\
+  -X POST ${baseUrl}/mcp \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"${this.currentMethod.name}","arguments":${JSON.stringify(parameters)}}}'
 
-# REST API
-curl -u admin:admin \\
+# Convenience REST
+curl -H "X-API-Key: $MCP_API_KEY" \\
   -X POST ${baseUrl}/api/methods/${this.currentMethod.name} \\
   -H 'Content-Type: application/json' \\
   -d '${JSON.stringify(parameters, null, 2)}'`;
@@ -519,14 +538,14 @@ curl -u admin:admin \\
 
     async checkHealth(showAlert = false) {
         try {
-            const response = await fetch('/health');
+            const response = await fetch('/health/live');
             const health = await response.json();
             
             const indicator = document.getElementById('healthIndicator');
             const statusDot = indicator.querySelector('.status-dot');
             const statusText = indicator.querySelector('.status-text');
             
-            if (health.status === 'healthy') {
+            if (health.status === 'ok' || health.status === 'healthy') {
                 statusDot.className = 'status-dot healthy';
                 statusText.textContent = 'Healthy';
             } else {

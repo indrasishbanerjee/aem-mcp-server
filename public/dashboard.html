@@ -14,6 +14,12 @@
             <div class="header-content">
                 <h1>AEM MCP Server Dashboard</h1>
                 <div class="header-actions">
+                    <div class="auth-bar">
+                        <input type="password" id="mcpApiKey" placeholder="API key" class="search-input" />
+                        <input type="text" id="mcpUser" placeholder="HTTP user" class="search-input" />
+                        <input type="password" id="mcpPass" placeholder="HTTP password" class="search-input" />
+                        <button class="btn btn-secondary" id="saveAuthBtn">Save auth</button>
+                    </div>
                     <div class="health-indicator" id="healthIndicator">
                         <span class="status-dot"></span>
                         <span class="status-text">Checking...</span>
@@ -58,8 +64,8 @@
                         <p>This interactive dashboard allows you to explore and test all available AEM MCP methods.</p>
                         <div class="feature-grid">
                             <div class="feature-card">
-                                <h3>35+ Methods</h3>
-                                <p>Complete set of AEM operations for pages, components, assets, and more</p>
+                                <h3>Catalog methods</h3>
+                                <p>Enabled AEM 6.5 operations from the typed tool catalog</p>
                             </div>
                             <div class="feature-card">
                                 <h3>Interactive Testing</h3>
