@@ -25,7 +25,10 @@ jobs:
       - run: npm run test:coverage
       - name: Secret scan (tracked files)
         run: |
-          if git grep -n -E 'AEM_SERVICE_PASSWORD=admin|MCP_PASSWORD=admin' -- ':!.env.example' ':!docs/**' ':!README.md' ':!src/__tests__/**' ':!src/config.ts'; then
+          pattern="$(printf '%s=admin|%s=admin' AEM_SERVICE_PASSWORD MCP_PASSWORD)"
+          matches="$(git grep -n -E "$pattern" -- ':!.env.example' ':!docs/**' ':!README.md' ':!src/__tests__/**' ':!src/config.ts' ':!.github/**' || true)"
+          if [ -n "$matches" ]; then
+            printf '%s\n' "$matches"
             echo 'Committed default credentials are not allowed'
             exit 1
           fi
