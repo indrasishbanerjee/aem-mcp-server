@@ -10,7 +10,7 @@ export class DiscoveryOperations {
 
   async fetchSites(): Promise<SuccessEnvelope<{ sites: Array<Record<string, unknown>> }>> {
     const data = asRecord(
-      await this.client.get(`${this.config.aem.sitesRoot}.json`, { ':depth': 2 })
+      await this.client.getJson(this.config.aem.sitesRoot, 2)
     );
     const sites: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
@@ -36,7 +36,7 @@ export class DiscoveryOperations {
     site: string
   ): Promise<SuccessEnvelope<{ site: string; languageMasters: Array<Record<string, unknown>> }>> {
     const sitePath = requirePath(`${this.config.aem.sitesRoot}/${site}`, this.config);
-    const data = asRecord(await this.client.get(`${sitePath}.json`, { ':depth': 2 }));
+    const data = asRecord(await this.client.getJson(sitePath, 2));
     const languageMasters: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
       if (systemKey(key) || !value || typeof value !== 'object') {
@@ -59,7 +59,7 @@ export class DiscoveryOperations {
     languageMasterPath: string
   ): Promise<SuccessEnvelope<{ availableLocales: Array<Record<string, unknown>> }>> {
     const path = requirePath(languageMasterPath, this.config);
-    const data = asRecord(await this.client.get(`${path}.json`, { ':depth': 2 }));
+    const data = asRecord(await this.client.getJson(path, 2));
     const availableLocales: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
       if (systemKey(key) || !value || typeof value !== 'object') {
@@ -80,7 +80,7 @@ export class DiscoveryOperations {
     pathRaw: string
   ): Promise<SuccessEnvelope<{ children: Array<Record<string, unknown>> }>> {
     const path = requirePath(pathRaw, this.config);
-    const data = asRecord(await this.client.get(`${path}.json`, { ':depth': 1 }));
+    const data = asRecord(await this.client.getJson(path, 1));
     const children: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
       if (systemKey(key) || key === 'jcr:content' || !value || typeof value !== 'object') {
@@ -101,10 +101,11 @@ export class DiscoveryOperations {
   async getTemplates(
     sitePathRaw?: string
   ): Promise<SuccessEnvelope<{ templates: Array<Record<string, unknown>>; source: string }>> {
-    const templatesPath = sitePathRaw
+    const constructed = sitePathRaw
       ? `/conf${requirePath(sitePathRaw, this.config).replace(/^\/content/, '')}/settings/wcm/templates`
       : `${this.config.aem.templatesRoot}/global/settings/wcm/templates`;
-    const data = asRecord(await this.client.get(`${templatesPath}.json`, { ':depth': 2 }));
+    const templatesPath = requirePath(constructed, this.config);
+    const data = asRecord(await this.client.getJson(templatesPath, 2));
     const templates: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
       if (systemKey(key) || !value || typeof value !== 'object') {
@@ -129,9 +130,7 @@ export class DiscoveryOperations {
     templatePathRaw: string
   ): Promise<SuccessEnvelope<{ templatePath: string; structure: Record<string, unknown> }>> {
     const templatePath = requirePath(templatePathRaw, this.config);
-    const data = asRecord(
-      await this.client.get(`${templatePath}.json`, { ':depth': this.config.aem.maxDepth })
-    );
+    const data = asRecord(await this.client.getJson(templatePath, this.config.aem.maxDepth));
     const content = asRecord(data['jcr:content']);
     return ok('getTemplateStructure', {
       templatePath,

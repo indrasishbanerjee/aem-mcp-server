@@ -18,6 +18,10 @@ export class PageOperations {
     private readonly config: AppConfig
   ) {}
 
+  /**
+   * Create a cq:Page via POST /bin/wcmcommand. Extra properties are applied only as
+   * additional safe Sling fields and cannot overwrite cmd, parentPath, title, label, or template.
+   */
   async createPage(input: {
     parentPath: string;
     title: string;
@@ -27,7 +31,7 @@ export class PageOperations {
   }): Promise<SuccessEnvelope<{ pagePath: string; title: string; templateUsed: string }>> {
     const parentPath = requirePath(input.parentPath, this.config);
     const template = requirePath(input.template, this.config);
-    await this.client.get(`${template}.json`, { ':depth': 1 });
+    await this.client.getJson(template, 1);
     const name = pageNameFromTitle(input.title, input.name);
     const pagePath = `${parentPath}/${name}`;
     const fields: Record<string, string> = {
@@ -39,8 +43,21 @@ export class PageOperations {
     };
     if (input.properties) {
       const extra = this.client.filterWritableProperties(input.properties);
-      Object.assign(fields, extra);
+      const reserved = new Set(['cmd', 'parentPath', 'title', 'label', 'template']);
+      for (const [key, value] of Object.entries(extra)) {
+        if (reserved.has(key)) {
+          continue;
+        }
+        fields[key] = value;
+      }
     }
+    Object.assign(fields, {
+      cmd: 'createPage',
+      parentPath,
+      title: input.title,
+      label: name,
+      template
+    });
     await this.client.postForm('/bin/wcmcommand', fields);
     return ok('createPage', { pagePath, title: input.title, templateUsed: template });
   }
@@ -80,21 +97,23 @@ export class PageOperations {
       })
     );
     const hits = Array.isArray(data.hits) ? (data.hits as Array<Record<string, unknown>>) : [];
-    const pages = hits.map(hit => ({
-      path: hit.path,
-      name: String(hit.path ?? '')
-        .split('/')
-        .pop(),
-      title: hit['jcr:content/jcr:title'] ?? hit.title,
-      template: hit['jcr:content/cq:template'],
-      lastModified: hit['jcr:content/cq:lastModified'],
-      resourceType: hit['jcr:content/sling:resourceType']
-    }));
+    const pages = hits.map(hit => {
+      const content = asRecord(hit['jcr:content']);
+      const path = String(hit['jcr:path'] ?? hit.path ?? '');
+      return {
+        path,
+        name: path.split('/').filter(Boolean).pop(),
+        title: content['jcr:title'] ?? hit['jcr:content/jcr:title'] ?? hit.title,
+        template: content['cq:template'] ?? hit['jcr:content/cq:template'],
+        lastModified: content['cq:lastModified'] ?? hit['jcr:content/cq:lastModified'],
+        resourceType: content['sling:resourceType'] ?? hit['jcr:content/sling:resourceType']
+      };
+    });
     return ok('listPages', {
       siteRoot,
       pages,
       pageCount: pages.length,
-      more: Boolean(data.hasMore) || Number(data.total) > pages.length
+      more: Boolean(data.more)
     });
   }
 
@@ -102,7 +121,7 @@ export class PageOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; properties: Record<string, unknown> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(await this.client.get(`${pagePath}/jcr:content.json`));
+    const content = asRecord(await this.client.getJson(`${pagePath}/jcr:content`));
     return ok('getPageProperties', {
       pagePath,
       properties: {
@@ -126,7 +145,7 @@ export class PageOperations {
   ): Promise<SuccessEnvelope<{ pagePath: string; content: Record<string, unknown> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
     const bounded = clampDepth(depth, this.config);
-    const content = asRecord(await this.client.get(`${pagePath}.json`, { ':depth': bounded }));
+    const content = asRecord(await this.client.getJson(pagePath, bounded));
     return ok('getPageContent', { pagePath, content: sanitizeTree(content) });
   }
 
@@ -134,9 +153,7 @@ export class PageOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; textContent: Array<Record<string, unknown>> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(
-      await this.client.get(`${pagePath}.json`, { ':depth': clampDepth(undefined, this.config) })
-    );
+    const content = asRecord(await this.client.getJson(pagePath, clampDepth(undefined, this.config)));
     const textContent: Array<Record<string, unknown>> = [];
     walk(content, 'jcr:content', (node, path) => {
       if (node.text || node['jcr:title'] || node['jcr:description']) {
@@ -155,9 +172,7 @@ export class PageOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; images: Array<Record<string, unknown>> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(
-      await this.client.get(`${pagePath}.json`, { ':depth': clampDepth(undefined, this.config) })
-    );
+    const content = asRecord(await this.client.getJson(pagePath, clampDepth(undefined, this.config)));
     const images: Array<Record<string, unknown>> = [];
     walk(content, 'jcr:content', (node, path) => {
       if (node.fileReference || node.src) {
@@ -176,14 +191,16 @@ export class PageOperations {
   async activatePage(input: {
     pagePath: string;
     activateTree?: boolean;
-  }): Promise<SuccessEnvelope<{ activatedPath: string; activateTree: boolean }>> {
+  }): Promise<SuccessEnvelope<{ activatedPath: string; activateTree: boolean; warning?: string }>> {
     return this.replicate(input.pagePath, 'Activate', Boolean(input.activateTree), 'activatePage');
   }
 
   async deactivatePage(input: {
     pagePath: string;
     deactivateTree?: boolean;
-  }): Promise<SuccessEnvelope<{ deactivatedPath: string; deactivateTree: boolean }>> {
+  }): Promise<
+    SuccessEnvelope<{ deactivatedPath: string; deactivateTree: boolean; warning?: string }>
+  > {
     const result = await this.replicate(
       input.pagePath,
       'Deactivate',
@@ -192,7 +209,8 @@ export class PageOperations {
     );
     return ok('deactivatePage', {
       deactivatedPath: result.data.activatedPath,
-      deactivateTree: result.data.activateTree
+      deactivateTree: result.data.activateTree,
+      warning: result.data.warning
     });
   }
 
@@ -220,9 +238,55 @@ export class PageOperations {
         statusCode: 400
       });
     }
-    await this.client.postForm('/bin/replicate.json', fields);
-    return ok(operation, { activatedPath: pagePath, activateTree: false });
+    const body = await this.client.postForm('/bin/replicate.json', fields);
+    const extra = inspectReplication(body);
+    return ok(operation, { activatedPath: pagePath, activateTree: false, ...extra });
   }
+}
+
+function inspectReplication(body: unknown): { warning?: string } {
+  if (body == null || body === '') {
+    return {
+      warning: 'Author returned no replication body; publish agent/queue status is not visible'
+    };
+  }
+  const text = typeof body === 'string' ? body : JSON.stringify(body);
+  const failed =
+    /replication failed/i.test(text) ||
+    /connection refused/i.test(text) ||
+    /econnrefused/i.test(text) ||
+    /cannot connect/i.test(text) ||
+    /replicationexception/i.test(text) ||
+    /agent[^\n]{0,80}(error|fail)/i.test(text);
+  if (failed) {
+    throw new AemError({
+      code: AEM_ERROR_CODES.SYSTEM_ERROR,
+      message: `Replication failed: ${text.slice(0, 400)}`,
+      statusCode: 502,
+      details: { replicateBody: text.slice(0, 400) }
+    });
+  }
+  const record = asRecord(body);
+  if (record.success === false || record.status === 'error' || record.status === 'ERROR') {
+    throw new AemError({
+      code: AEM_ERROR_CODES.SYSTEM_ERROR,
+      message: `Replication failed: ${String(record.message ?? record.status ?? text.slice(0, 400))}`,
+      statusCode: 502,
+      details: { replicateBody: record }
+    });
+  }
+  const hasQueue =
+    record.queue !== undefined ||
+    record.agents !== undefined ||
+    record.agentId !== undefined ||
+    record.status !== undefined;
+  if (!hasQueue) {
+    return {
+      warning:
+        'Author reported success; publish agent/queue details were not in the replicate response'
+    };
+  }
+  return {};
 }
 
 function sanitizeTree(node: Record<string, unknown>): Record<string, unknown> {

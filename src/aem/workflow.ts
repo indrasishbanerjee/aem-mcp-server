@@ -1,7 +1,11 @@
 import type { AppConfig } from '../config.js';
 import { AEM_ERROR_CODES, AemError } from '../errors.js';
+import { assertAllowedPath, canonicalizeJcrPath, isPrefix } from '../security/paths.js';
 import type { AemHttpClient } from './client.js';
-import { asRecord, clampLimit, ok, requirePath, type SuccessEnvelope } from './util.js';
+import { asRecord, clampLimit, ok, requirePath, slingCollection, type SuccessEnvelope } from './util.js';
+
+const WORKFLOW_INSTANCE_ROOTS = ['/var/workflow/instances', '/etc/workflow/instances'];
+const WORKFLOW_MODEL_ROOTS = ['/var/workflow/models', '/etc/workflow/models'];
 
 export class WorkflowOperations {
   constructor(
@@ -14,19 +18,23 @@ export class WorkflowOperations {
     payloadPath: string;
     title?: string;
     comment?: string;
-  }): Promise<SuccessEnvelope<{ model: string; payloadPath: string; title?: string }>> {
+  }): Promise<
+    SuccessEnvelope<{ model: string; payloadPath: string; title?: string; instancePath?: string }>
+  > {
     const payloadPath = requirePath(input.payloadPath, this.config);
-    await this.client.get(`${payloadPath}.json`, { ':depth': 0 });
-    await this.client.postForm('/etc/workflow/instances', {
-      model: input.model,
+    const model = requireWorkflowModelPath(input.model);
+    await this.client.getJson(payloadPath, 0);
+    const posted = await this.client.postFormResult('/etc/workflow/instances', {
+      model,
       payloadType: 'JCR_PATH',
       payload: payloadPath,
       workflowTitle: input.title || `MCP ${payloadPath}`
     });
     return ok('startWorkflow', {
-      model: input.model,
+      model,
       payloadPath,
-      title: input.title
+      title: input.title,
+      instancePath: instancePathFromStart(posted)
     });
   }
 
@@ -34,7 +42,7 @@ export class WorkflowOperations {
     workflowId: string
   ): Promise<SuccessEnvelope<{ workflowId: string; data: Record<string, unknown> }>> {
     const path = workflowInstancePath(workflowId);
-    const data = asRecord(await this.client.get(`${path}.json`, { ':depth': 2 }));
+    const data = asRecord(await this.client.getJson(path, 2));
     return ok('getWorkflowStatus', { workflowId: path, data });
   }
 
@@ -54,7 +62,7 @@ export class WorkflowOperations {
     );
     return ok('listActiveWorkflows', {
       workflows: Array.isArray(data.hits) ? data.hits : [],
-      more: Boolean(data.hasMore)
+      more: Boolean(data.more)
     });
   }
 
@@ -91,24 +99,17 @@ export class WorkflowOperations {
       '/etc/workflow/models'
     ];
     const models: Array<Record<string, unknown>> = [];
+    const seen = new Set<string>();
     for (const root of roots) {
       try {
-        const data = asRecord(await this.client.get(`${root}.json`, { ':depth': 2 }));
-        for (const [key, value] of Object.entries(data)) {
-          if (
-            key.startsWith('jcr:') ||
-            key.startsWith('sling:') ||
-            !value ||
-            typeof value !== 'object'
-          ) {
+        const data: unknown = await this.client.getJson(root);
+        for (const model of modelsFromPayload(data, root)) {
+          const modelId = String(model.modelId);
+          if (seen.has(modelId)) {
             continue;
           }
-          const node = value as Record<string, unknown>;
-          const content = asRecord(node['jcr:content']);
-          models.push({
-            modelId: `${root}/${key}`,
-            title: content['jcr:title'] ?? key
-          });
+          seen.add(modelId);
+          models.push(model);
         }
       } catch {
         continue;
@@ -128,7 +129,7 @@ export class VersionOperations {
     pathRaw: string
   ): Promise<SuccessEnvelope<{ path: string; versions: unknown }>> {
     const path = requirePath(pathRaw, this.config);
-    const data = await this.client.get(`${path}.versionhistory.json`, { ':depth': 2 });
+    const data = await this.client.get('/bin/wcm/versions.json', { path });
     return ok('getVersionHistory', { path, versions: data });
   }
 
@@ -164,22 +165,96 @@ export class VersionOperations {
 }
 
 function workflowInstancePath(id: string): string {
-  if (!id || id.includes('..') || /[?#\\]/.test(id)) {
+  const raw = id.startsWith('/') ? id : `/var/workflow/instances/${id}`;
+  return assertAllowedPath(raw, { allowedRoots: WORKFLOW_INSTANCE_ROOTS, maxDepth: 32 });
+}
+
+function requireWorkflowModelPath(raw: string): string {
+  const path = canonicalizeJcrPath(raw);
+  const allowed =
+    WORKFLOW_MODEL_ROOTS.some(root => isPrefix(root, path)) ||
+    (isPrefix('/conf', path) && /\/workflow\/models(\/|$)/.test(path));
+  if (!allowed) {
     throw new AemError({
-      code: AEM_ERROR_CODES.INVALID_PARAMETERS,
-      message: 'Invalid workflow id',
+      code: AEM_ERROR_CODES.INVALID_PATH,
+      message: `Workflow model path '${path}' is outside allowed model roots`,
       statusCode: 400
     });
   }
-  if (id.startsWith('/var/workflow/instances/') || id.startsWith('/etc/workflow/instances/')) {
-    return id.replace(/\/+$/, '');
+  return path;
+}
+
+function jcrUri(uri: string): string {
+  return uri.replace(/^https?:\/\/[^/]+/i, '').split('?')[0] ?? uri;
+}
+
+function instancePathFromStart(posted: {
+  data: unknown;
+  headers: Record<string, string>;
+}): string | undefined {
+  const record = asRecord(posted.data);
+  const candidates = [
+    posted.headers.location,
+    posted.headers.Location,
+    record.path,
+    record.instancePath,
+    record.workflowId
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string' || !candidate.trim()) {
+      continue;
+    }
+    const path = jcrUri(candidate.trim());
+    if (!path.startsWith('/')) {
+      continue;
+    }
+    try {
+      return workflowInstancePath(path);
+    } catch {
+      return path;
+    }
   }
-  if (id.includes('/')) {
-    throw new AemError({
-      code: AEM_ERROR_CODES.INVALID_PARAMETERS,
-      message: 'Workflow id must be an instance name or an /etc|/var workflow instance path',
-      statusCode: 400
+  return undefined;
+}
+
+function modelsFromPayload(data: unknown, root: string): Array<Record<string, unknown>> {
+  const fromList = slingCollection(data);
+  if (fromList.length > 0) {
+    return fromList
+      .map(item => modelEntry(item))
+      .filter((item): item is Record<string, unknown> => Boolean(item));
+  }
+  const models: Array<Record<string, unknown>> = [];
+  for (const [key, value] of Object.entries(asRecord(data))) {
+    if (key.startsWith('jcr:') || key.startsWith('sling:') || key.startsWith('{')) {
+      continue;
+    }
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      continue;
+    }
+    const node = value as Record<string, unknown>;
+    const content = asRecord(node['jcr:content']);
+    models.push({
+      modelId: `${root}/${key}`,
+      title: content['jcr:title'] ?? key
     });
   }
-  return `/var/workflow/instances/${id}`;
+  return models;
+}
+
+function modelEntry(item: unknown): Record<string, unknown> | undefined {
+  if (typeof item === 'string') {
+    const modelId = jcrUri(item);
+    return { modelId, title: modelId.split('/').filter(Boolean).pop() };
+  }
+  const record = asRecord(item);
+  const uri = record.uri ?? record.modelId ?? record.id ?? record.wid;
+  if (typeof uri !== 'string' || !uri) {
+    return undefined;
+  }
+  const modelId = jcrUri(uri);
+  return {
+    modelId,
+    title: record.title ?? record['jcr:title'] ?? modelId.split('/').filter(Boolean).pop()
+  };
 }

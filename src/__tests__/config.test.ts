@@ -33,6 +33,17 @@ describe('loadConfig', () => {
     ).toThrow(expect.objectContaining({ code: AEM_ERROR_CODES.AUTHENTICATION_FAILED }));
   });
 
+  it('requires HTTP credentials in development', () => {
+    expect(() =>
+      loadConfig(
+        baseEnv({
+          NODE_ENV: 'development',
+          HTTP_ENABLED: 'true'
+        })
+      )
+    ).toThrow(expect.objectContaining({ code: AEM_ERROR_CODES.AUTHENTICATION_FAILED }));
+  });
+
   it('requires HTTP credentials in production', () => {
     expect(() =>
       loadConfig(

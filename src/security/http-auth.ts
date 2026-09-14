@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { Request, Response, NextFunction } from 'express';
 import type { AppConfig } from '../config.js';
 import { generateRequestId } from './redact.js';
@@ -7,6 +8,15 @@ export function requestIdMiddleware(req: Request, res: Response, next: NextFunct
   (req as Request & { requestId: string }).requestId = id;
   res.setHeader('x-request-id', id);
   next();
+}
+
+function secretsEqual(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) {
+    return false;
+  }
+  return timingSafeEqual(a, b);
 }
 
 export function createAuthMiddleware(config: AppConfig) {
@@ -19,23 +29,19 @@ export function createAuthMiddleware(config: AppConfig) {
       return;
     }
     if (!required) {
-      if (config.nodeEnv === 'production' || config.nodeEnv === 'staging') {
-        res.status(401).json({
-          error: { code: 'AUTHENTICATION_FAILED', message: 'Authentication is required' }
-        });
-        return;
-      }
-      next();
+      res.status(401).json({
+        error: { code: 'AUTHENTICATION_FAILED', message: 'Authentication is required' }
+      });
       return;
     }
 
     const header = req.headers.authorization;
     const providedKey = req.headers['x-api-key'];
-    if (apiKey && typeof providedKey === 'string' && providedKey === apiKey) {
+    if (apiKey && typeof providedKey === 'string' && secretsEqual(providedKey, apiKey)) {
       next();
       return;
     }
-    if (apiKey && header?.startsWith('Bearer ') && header.slice(7) === apiKey) {
+    if (apiKey && header?.startsWith('Bearer ') && secretsEqual(header.slice(7), apiKey)) {
       next();
       return;
     }
@@ -44,7 +50,7 @@ export function createAuthMiddleware(config: AppConfig) {
       const separator = decoded.indexOf(':');
       const user = decoded.slice(0, separator);
       const pass = decoded.slice(separator + 1);
-      if (user === username && pass === password) {
+      if (secretsEqual(user, username) && secretsEqual(pass, password)) {
         next();
         return;
       }
@@ -58,6 +64,10 @@ export function createAuthMiddleware(config: AppConfig) {
 
 export function hostOriginGuard(config: AppConfig) {
   return (req: Request, res: Response, next: NextFunction): void => {
+    if (req.path === '/health/live') {
+      next();
+      return;
+    }
     const host = req.headers.host;
     if (host && config.http.allowedHosts.length > 0) {
       const hostname = host.split(':')[0] ?? host;

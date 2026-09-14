@@ -49,6 +49,7 @@ export class AemError extends Error {
       message: this.message,
       details: this.details,
       recoverable: this.recoverable,
+      statusCode: this.statusCode,
       retryAfterMs: this.retryAfterMs
     };
   }

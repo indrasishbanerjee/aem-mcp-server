@@ -10,10 +10,13 @@ FROM node:20-alpine
 RUN addgroup -S mcp && adduser -S mcp -G mcp
 WORKDIR /app
 ENV NODE_ENV=production
+# Bind all interfaces inside the container so the published port works.
+# Put a TLS-terminating reverse proxy in front. Do not expose this port on the public internet.
+ENV HOST=0.0.0.0
+ENV ALLOWED_HOSTS=127.0.0.1,localhost
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
-COPY public ./public
 USER mcp
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \

@@ -50,8 +50,7 @@ export class Logger {
     };
     const serialized = JSON.stringify(entry);
     if (this.options.enableConsole) {
-      const stream = level === 'error' ? process.stderr : process.stderr;
-      stream.write(`${serialized}\n`);
+      process.stderr.write(`${serialized}\n`);
     }
     if (this.options.enableFile) {
       void this.append(serialized).catch(() => undefined);

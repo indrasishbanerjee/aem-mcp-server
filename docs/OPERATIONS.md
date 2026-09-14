@@ -29,7 +29,7 @@ Production and staging refuse `admin` / `admin`. Rotate the password if it ever 
 
 ## CSRF
 
-Mutating calls fetch `GET /libs/granite/csrf/token.json` and send `CSRF-Token`. A 403 CSRF response is retried once with a fresh token, then fails closed. There is no fallback that skips CSRF.
+Mutating calls fetch `GET /libs/granite/csrf/token.json` and send `CSRF-Token`. Only a 403 that looks like a Granite CSRF failure (response body or headers mention CSRF) is retried once with a fresh token. Ordinary ACL 403s are not retried. After a CSRF retry still fails, the process fails closed with `CSRF_FAILED`. There is no fallback that skips CSRF.
 
 ## HTTP MCP (optional)
 
@@ -53,10 +53,11 @@ Stdio is enough for IDE clients:
 
 If you enable HTTP (`npm start`):
 
-- Require `MCP_API_KEY` or `MCP_USERNAME` / `MCP_PASSWORD`.
+- Require `MCP_API_KEY` or `MCP_USERNAME` / `MCP_PASSWORD` in every environment, including development.
 - Put TLS and a reverse proxy in front of the process. Bind `HOST=127.0.0.1` unless the proxy is local.
+- Containers set `HOST=0.0.0.0` with `ALLOWED_HOSTS` including `127.0.0.1` so HEALTHCHECK works; still require a TLS proxy in front.
 - Set `ALLOWED_HOSTS` and `CORS_ORIGINS`. Empty CORS means browsers are denied.
-- Liveness: unauthenticated `GET /health/live`. Readiness and diagnostics require auth.
+- Liveness: unauthenticated `GET /health/live` (also skips Host allowlist and rate-limit so probes work). Readiness and diagnostics require auth.
 
 Streamable HTTP example:
 
@@ -82,7 +83,7 @@ curl -sS -H "X-API-Key: $MCP_API_KEY" -H "Content-Type: application/json" \
 
 ## Backup / restore
 
-This process stores no JCR content. Backup Author as usual. Idempotency keys are in-memory and vanish on restart. Audit logs, if file logging is enabled, live under `LOG_DIRECTORY`.
+This process stores no JCR content. Backup Author as usual. Idempotency keys are in-memory, singleflight per process, and vanish on restart. Concurrent callers with the same key wait for the first in-flight execution; replica processes do not share this cache, so do not rely on idempotency across horizontally scaled instances. Audit logs, if file logging is enabled, live under `LOG_DIRECTORY`.
 
 ## Audit retention
 

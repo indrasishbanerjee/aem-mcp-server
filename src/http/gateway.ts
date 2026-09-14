@@ -14,16 +14,47 @@ import {
 import { createMcpServer, listEnabledTools } from '../mcp/create-server.js';
 import { createCatalog, runCatalogTool } from '../mcp/catalog.js';
 import { AEM_ERROR_CODES, isAemError } from '../errors.js';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const JSON_BODY_CAP_BYTES = 64 * 1024 * 1024;
+
+function jsonBodyLimitBytes(maxUploadBytes: number): number {
+  return Math.min(Math.ceil((maxUploadBytes * 4) / 3) + 1024 * 1024, JSON_BODY_CAP_BYTES);
+}
+
+function httpStatusForToolResult(result: CallToolResult): number {
+  if (!result.isError) {
+    return 200;
+  }
+  const payload = result.structuredContent;
+  if (payload && typeof payload === 'object' && 'statusCode' in payload) {
+    const status = Number((payload as { statusCode: unknown }).statusCode);
+    if (Number.isInteger(status) && status >= 400 && status < 600) {
+      return status;
+    }
+  }
+  return 400;
+}
+
+function sdkAllowedHosts(config: AppConfig): string[] {
+  const hosts = new Set<string>();
+  for (const host of config.http.allowedHosts) {
+    hosts.add(host);
+    if (!host.includes(':')) {
+      hosts.add(`${host}:${config.http.port}`);
+    }
+  }
+  return [...hosts];
+}
 
 export function createApp(config: AppConfig, logger: Logger, aem: AemConnector): Express {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet({ contentSecurityPolicy: false }));
   app.use(requestIdMiddleware);
+  app.get('/health/live', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
   app.use(hostOriginGuard(config));
   app.use(
     cors({
@@ -31,22 +62,19 @@ export function createApp(config: AppConfig, logger: Logger, aem: AemConnector):
       credentials: false
     })
   );
-  app.use(express.json({ limit: '2mb' }));
-  app.use(express.urlencoded({ extended: false, limit: '2mb' }));
+  const jsonLimit = jsonBodyLimitBytes(config.aem.maxUploadBytes);
+  app.use(express.json({ limit: jsonLimit }));
+  app.use(express.urlencoded({ extended: false, limit: jsonLimit }));
   app.use(
     rateLimit({
       windowMs: config.http.rateLimitWindowMs,
       limit: config.http.rateLimitMax,
       standardHeaders: true,
-      legacyHeaders: false
+      legacyHeaders: false,
+      skip: req => req.path === '/health/live'
     })
   );
   app.use(createAuthMiddleware(config));
-  app.use(express.static(join(__dirname, '../../public')));
-
-  app.get('/health/live', (_req, res) => {
-    res.json({ status: 'ok' });
-  });
 
   app.get('/health/ready', async (_req, res) => {
     const connected = await aem.testConnection().catch(() => false);
@@ -71,7 +99,7 @@ export function createApp(config: AppConfig, logger: Logger, aem: AemConnector):
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
       enableDnsRebindingProtection: true,
-      allowedHosts: config.http.allowedHosts,
+      allowedHosts: sdkAllowedHosts(config),
       allowedOrigins: config.http.corsOrigins
     });
     res.on('close', () => {
@@ -114,15 +142,13 @@ export function createApp(config: AppConfig, logger: Logger, aem: AemConnector):
       idempotency: aem.idempotency,
       logger
     });
-    res.status(result.isError ? 400 : 200).json({
+    const status = httpStatusForToolResult(result);
+    res.status(status).json({
       success: !result.isError,
       method: tool.name,
-      data: result.structuredContent ?? result.content
+      data: result.structuredContent ?? result.content,
+      error: result.isError ? result.structuredContent : undefined
     });
-  });
-
-  app.get('/dashboard', (_req, res) => {
-    res.sendFile(join(__dirname, '../../public/dashboard.html'));
   });
 
   app.get('/', (_req, res) => {

@@ -62,7 +62,7 @@ export class SearchOperations {
     return ok('searchContent', {
       results,
       total: data.total,
-      more: Boolean(data.hasMore)
+      more: Boolean(data.more)
     });
   }
 

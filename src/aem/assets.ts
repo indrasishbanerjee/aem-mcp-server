@@ -1,7 +1,38 @@
 import type { AppConfig } from '../config.js';
 import { AEM_ERROR_CODES, AemError } from '../errors.js';
+import { assertSafeSlingFieldName } from '../security/sling-fields.js';
 import type { AemHttpClient } from './client.js';
 import { asRecord, ok, requirePath, type SuccessEnvelope } from './util.js';
+
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'application/pdf',
+  'text/plain',
+  'text/csv',
+  'text/html',
+  'text/xml',
+  'application/xml',
+  'application/json'
+]);
+
+const EXTENSION_MIME_TYPES: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  pdf: 'application/pdf',
+  txt: 'text/plain',
+  csv: 'text/csv',
+  html: 'text/html',
+  xml: 'application/xml',
+  json: 'application/json'
+};
 
 export class AssetOperations {
   constructor(
@@ -24,6 +55,7 @@ export class AssetOperations {
         statusCode: 400
       });
     }
+    const mimeType = resolveMimeType(input.fileName, input.mimeType);
     const binary = decodeFileContent(input.fileContent);
     if (binary.byteLength > this.config.aem.maxUploadBytes) {
       throw new AemError({
@@ -33,21 +65,13 @@ export class AssetOperations {
       });
     }
     const form = new FormData();
-    const blob = new Blob([new Uint8Array(binary)], {
-      type: input.mimeType || 'application/octet-stream'
-    });
+    const blob = new Blob([new Uint8Array(binary)], { type: mimeType });
     form.append('file', blob, input.fileName);
-    if (input.mimeType) {
-      form.append('mimeType', input.mimeType);
-    }
+    form.append('mimeType', mimeType);
     await this.client.postMultipart(`${parentPath}.createasset.html`, form);
     const assetPath = `${parentPath}/${input.fileName}`;
     if (input.metadata) {
-      const fields: Record<string, string> = {};
-      for (const [key, value] of Object.entries(input.metadata)) {
-        fields[`jcr:content/metadata/${key}`] = value;
-      }
-      await this.client.postForm(assetPath, fields);
+      await this.client.postForm(assetPath, metadataFields(input.metadata));
     }
     return ok('uploadAsset', { assetPath, fileName: input.fileName });
   }
@@ -64,11 +88,7 @@ export class AssetOperations {
         statusCode: 400
       });
     }
-    const fields: Record<string, string> = {};
-    for (const [key, value] of Object.entries(input.metadata)) {
-      fields[`jcr:content/metadata/${key}`] = value;
-    }
-    await this.client.postForm(assetPath, fields);
+    await this.client.postForm(assetPath, metadataFields(input.metadata));
     return ok('updateAsset', { assetPath });
   }
 
@@ -87,6 +107,40 @@ export class AssetOperations {
     const data = asRecord(await this.client.get(`${assetPath}/jcr:content/metadata.json`));
     return ok('getAssetMetadata', { assetPath, metadata: data });
   }
+}
+
+function metadataFields(metadata: Record<string, string>): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    assertSafeSlingFieldName(key);
+    fields[`jcr:content/metadata/${key}`] = value;
+  }
+  return fields;
+}
+
+function resolveMimeType(fileName: string, mimeType?: string): string {
+  if (mimeType) {
+    const normalized = mimeType.trim().toLowerCase();
+    if (!ALLOWED_MIME_TYPES.has(normalized)) {
+      throw new AemError({
+        code: AEM_ERROR_CODES.INVALID_PARAMETERS,
+        message: `MIME type '${mimeType}' is not allowed`,
+        statusCode: 400
+      });
+    }
+    return normalized;
+  }
+  const ext = fileName.includes('.') ? (fileName.split('.').pop() ?? '').toLowerCase() : '';
+  const inferred = EXTENSION_MIME_TYPES[ext];
+  if (!inferred) {
+    throw new AemError({
+      code: AEM_ERROR_CODES.INVALID_PARAMETERS,
+      message:
+        'MIME type is required for this file; unknown types are not uploaded as application/octet-stream',
+      statusCode: 400
+    });
+  }
+  return inferred;
 }
 
 function decodeFileContent(fileContent: string): Buffer {

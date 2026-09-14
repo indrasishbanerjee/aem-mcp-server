@@ -36,6 +36,7 @@ export const configSchema = z.object({
     defaultContainer: z.string(),
     defaultPageResourceType: z.string(),
     allowedComponentTypes: z.array(z.string()).min(1),
+    componentResourceTypes: z.record(z.string()),
     maxLimit: z.number().int().positive(),
     defaultLimit: z.number().int().positive(),
     timeoutMs: z.number().int().positive(),
@@ -65,6 +66,46 @@ export const configSchema = z.object({
 
 export type AppConfig = z.infer<typeof configSchema>;
 
+const DEFAULT_COMPONENT_RESOURCE_TYPES: Record<string, string> = {
+  text: 'core/wcm/components/text/v2/text',
+  image: 'core/wcm/components/image/v3/image',
+  teaser: 'core/wcm/components/teaser/v2/teaser',
+  button: 'core/wcm/components/button/v2/button',
+  list: 'core/wcm/components/list/v2/list',
+  title: 'core/wcm/components/title/v3/title',
+  separator: 'core/wcm/components/separator/v1/separator'
+};
+
+function parseComponentResourceTypes(
+  raw: string | undefined,
+  allowed: string[]
+): Record<string, string> {
+  const mapped: Record<string, string> = {};
+  for (const type of allowed) {
+    mapped[type] =
+      DEFAULT_COMPONENT_RESOURCE_TYPES[type] ?? `core/wcm/components/${type}/v1/${type}`;
+  }
+  if (!raw?.trim()) {
+    return mapped;
+  }
+  for (const pair of raw.split(',')) {
+    const separator = pair.indexOf(':');
+    if (separator <= 0) {
+      continue;
+    }
+    const type = pair.slice(0, separator).trim();
+    const resourceType = pair.slice(separator + 1).trim();
+    if (type && resourceType) {
+      mapped[type] = resourceType;
+    }
+  }
+  return mapped;
+}
+
+/**
+ * Load and validate process environment into a typed AppConfig.
+ * When HTTP is enabled, MCP_API_KEY or MCP_USERNAME/MCP_PASSWORD is required in every environment.
+ */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const nodeEnv = (
     env.NODE_ENV === 'production' || env.NODE_ENV === 'staging' || env.NODE_ENV === 'test'
@@ -95,10 +136,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const apiKey = env.MCP_API_KEY;
   const mcpUser = env.MCP_USERNAME;
   const mcpPassword = env.MCP_PASSWORD;
-  if (httpEnabled && isProd && !apiKey && !(mcpUser && mcpPassword)) {
+  if (httpEnabled && !apiKey && !(mcpUser && mcpPassword)) {
     throw new AemError({
       code: AEM_ERROR_CODES.AUTHENTICATION_FAILED,
-      message: 'HTTP mode requires MCP_API_KEY or MCP_USERNAME/MCP_PASSWORD',
+      message: 'HTTP mode requires MCP_API_KEY or MCP_USERNAME/MCP_PASSWORD in every environment',
       statusCode: 500
     });
   }
@@ -109,6 +150,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       statusCode: 500
     });
   }
+
+  const allowedComponentTypes = csv(env.AEM_ALLOWED_COMPONENTS, [
+    'text',
+    'image',
+    'teaser',
+    'button',
+    'list',
+    'title',
+    'separator'
+  ]);
 
   const parsed = configSchema.parse({
     nodeEnv,
@@ -124,15 +175,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       defaultContainer: env.AEM_DEFAULT_CONTAINER || 'root',
       defaultPageResourceType:
         env.AEM_DEFAULT_PAGE_RESOURCE_TYPE || 'core/wcm/components/page/v3/page',
-      allowedComponentTypes: csv(env.AEM_ALLOWED_COMPONENTS, [
-        'text',
-        'image',
-        'teaser',
-        'button',
-        'list',
-        'title',
-        'separator'
-      ]),
+      allowedComponentTypes,
+      componentResourceTypes: parseComponentResourceTypes(
+        env.AEM_COMPONENT_RESOURCE_TYPES,
+        allowedComponentTypes
+      ),
       maxLimit: envInt('AEM_QUERY_MAX_LIMIT', 100),
       defaultLimit: envInt('AEM_QUERY_DEFAULT_LIMIT', 20),
       timeoutMs: envInt('AEM_QUERY_TIMEOUT', 30000),

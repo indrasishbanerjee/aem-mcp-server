@@ -12,16 +12,16 @@
     "start": "node dist/index.js",
     "mcp": "node dist/mcp/stdio.js",
     "dev": "tsx src/index.ts",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs",
-    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs --coverage",
-    "test:integration": "AEM_INTEGRATION=1 NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs src/__tests__/integration",
+    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs",
+    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs --coverage",
+    "test:integration": "cross-env AEM_INTEGRATION=1 NODE_OPTIONS=--experimental-vm-modules jest --config jest.config.cjs src/__tests__/integration",
     "lint": "eslint --config .eslintrc.cjs src --ext .ts",
     "lint:fix": "eslint --config .eslintrc.cjs src --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -44,6 +44,7 @@
     "prettier": "^3.2.5",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
+    "cross-env": "^7.0.3",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3"
   },

@@ -1,5 +1,6 @@
 import type { AppConfig } from '../config.js';
 import { AEM_ERROR_CODES, AemError } from '../errors.js';
+import { isPrefix } from '../security/paths.js';
 import type { AemHttpClient } from './client.js';
 import { asRecord, ok, requirePath, systemKey, type SuccessEnvelope } from './util.js';
 
@@ -12,13 +13,14 @@ export class ComponentOperations {
   async createComponent(input: {
     pagePath: string;
     componentType: string;
-    resourceType: string;
+    resourceType?: string;
     name?: string;
     parentPath?: string;
     properties?: Record<string, unknown>;
   }): Promise<SuccessEnvelope<{ componentPath: string; resourceType: string }>> {
     const pagePath = requirePath(input.pagePath, this.config);
-    if (!this.config.aem.allowedComponentTypes.includes(input.componentType)) {
+    const mappedType = this.config.aem.componentResourceTypes[input.componentType];
+    if (!this.config.aem.allowedComponentTypes.includes(input.componentType) || !mappedType) {
       throw new AemError({
         code: AEM_ERROR_CODES.INVALID_PARAMETERS,
         message: `Component type '${input.componentType}' is not in the allowlist`,
@@ -26,9 +28,25 @@ export class ComponentOperations {
         details: { allowed: this.config.aem.allowedComponentTypes }
       });
     }
+    if (input.resourceType && input.resourceType !== mappedType) {
+      throw new AemError({
+        code: AEM_ERROR_CODES.INVALID_PARAMETERS,
+        message: `resourceType must be '${mappedType}' for component type '${input.componentType}'`,
+        statusCode: 400
+      });
+    }
+    const resourceType = mappedType;
+    const contentRoot = `${pagePath}/jcr:content`;
     const container = input.parentPath
       ? requirePath(input.parentPath, this.config)
-      : `${pagePath}/jcr:content/${this.config.aem.defaultContainer}`;
+      : `${contentRoot}/${this.config.aem.defaultContainer}`;
+    if (!isPrefix(contentRoot, container)) {
+      throw new AemError({
+        code: AEM_ERROR_CODES.INVALID_PARAMETERS,
+        message: 'parentPath must be under the page jcr:content tree',
+        statusCode: 400
+      });
+    }
     const name =
       input.name && /^[a-zA-Z0-9_-]+$/.test(input.name)
         ? input.name
@@ -41,9 +59,9 @@ export class ComponentOperations {
       },
       { allowPrimaryType: true }
     );
-    fields['sling:resourceType'] = input.resourceType;
+    fields['sling:resourceType'] = resourceType;
     await this.client.postForm(componentPath, fields);
-    return ok('createComponent', { componentPath, resourceType: input.resourceType });
+    return ok('createComponent', { componentPath, resourceType });
   }
 
   async updateComponent(input: {
@@ -55,10 +73,12 @@ export class ComponentOperations {
     const current = asRecord(await this.client.get(`${componentPath}.json`));
     if (input.ifMatch) {
       const lastModified = String(current['cq:lastModified'] ?? current['jcr:lastModified'] ?? '');
-      if (lastModified && lastModified !== input.ifMatch) {
+      if (!lastModified || lastModified !== input.ifMatch) {
         throw new AemError({
           code: AEM_ERROR_CODES.CONFLICT,
-          message: 'Component was modified after the supplied ifMatch precondition',
+          message: lastModified
+            ? 'Component was modified after the supplied ifMatch precondition'
+            : 'ifMatch was supplied but the component has no lastModified stamp',
           statusCode: 409,
           details: { path: componentPath, ifMatch: input.ifMatch, lastModified }
         });
@@ -88,9 +108,7 @@ export class ComponentOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; components: Array<Record<string, unknown>> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(
-      await this.client.get(`${pagePath}.json`, { ':depth': this.config.aem.maxDepth })
-    );
+    const content = asRecord(await this.client.getJson(pagePath, this.config.aem.maxDepth));
     const components: Array<Record<string, unknown>> = [];
     const visit = (node: Record<string, unknown>, path: string): void => {
       if (typeof node['sling:resourceType'] === 'string') {

@@ -25,6 +25,9 @@ export interface CatalogTool {
 const path = z.string().min(1);
 const optionalLimit = z.number().int().positive().optional();
 
+/**
+ * Build the MCP tool catalog for this connector. Disabled tools stay quarantined.
+ */
 export function createCatalog(aem: AemConnector): CatalogTool[] {
   const tools: CatalogTool[] = [
     readTool(
@@ -166,7 +169,7 @@ export function createCatalog(aem: AemConnector): CatalogTool[] {
       {
         pagePath: path,
         componentType: z.string().min(1),
-        resourceType: z.string().min(1),
+        resourceType: z.string().min(1).optional(),
         name: z.string().optional(),
         parentPath: path.optional(),
         properties: z.record(z.unknown()).optional()
@@ -176,7 +179,7 @@ export function createCatalog(aem: AemConnector): CatalogTool[] {
           args as {
             pagePath: string;
             componentType: string;
-            resourceType: string;
+            resourceType?: string;
             name?: string;
             parentPath?: string;
             properties?: Record<string, unknown>;
@@ -459,7 +462,7 @@ export function createCatalog(aem: AemConnector): CatalogTool[] {
     readTool(
       'getVersionHistory',
       'Get version history',
-      'Read {path}.versionhistory.json with bounded depth.',
+      'Read /bin/wcm/versions.json for the given path.',
       {
         path
       },

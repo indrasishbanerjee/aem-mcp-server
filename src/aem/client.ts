@@ -4,6 +4,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import type { AppConfig } from '../config.js';
 import { AEM_ERROR_CODES, AemError, isAemError } from '../errors.js';
 import type { Logger } from '../logger.js';
+import { assertSafeSlingFieldName } from '../security/sling-fields.js';
 import { WriteSemaphore } from './semaphore.js';
 import { CircuitBreaker } from './circuit-breaker.js';
 
@@ -61,12 +62,31 @@ export class AemHttpClient {
       this.breaker.recordSuccess();
       return response.data;
     } catch (error) {
-      this.breaker.recordFailure();
+      if (shouldTripBreaker(error)) {
+        this.breaker.recordFailure();
+      }
       throw this.mapError(error, 'GET', path);
     }
   }
 
+  /**
+   * GET {path}.json or {path}.{depth}.json. AEM 6.5 DefaultGetServlet ignores ?:depth=.
+   */
+  async getJson<T = unknown>(path: string, depth?: number): Promise<T> {
+    const base = path.replace(/\/+$/, '');
+    const jsonPath = depth === undefined ? `${base}.json` : `${base}.${depth}.json`;
+    return this.get<T>(jsonPath);
+  }
+
   async postForm<T = unknown>(path: string, fields: Record<string, string>): Promise<T> {
+    const result = await this.postFormResult<T>(path, fields);
+    return result.data;
+  }
+
+  async postFormResult<T = unknown>(
+    path: string,
+    fields: Record<string, string>
+  ): Promise<{ data: T; headers: Record<string, string>; status: number }> {
     return this.mutating('POST', path, async token => {
       const body = new URLSearchParams();
       body.set('_charset_', 'UTF-8');
@@ -79,7 +99,11 @@ export class AemHttpClient {
           'CSRF-Token': token
         }
       });
-      return response.data;
+      return {
+        data: response.data,
+        headers: normalizeHeaders(response.headers),
+        status: response.status ?? 200
+      };
     });
   }
 
@@ -102,6 +126,7 @@ export class AemHttpClient {
     const opts = typeof options === 'boolean' ? { allowResourceType: options } : options;
     const writable: Record<string, string> = {};
     for (const [key, value] of Object.entries(properties)) {
+      assertSafeSlingFieldName(key);
       const allowedException =
         (opts.allowResourceType && key === 'sling:resourceType') ||
         (opts.allowPrimaryType && key === 'jcr:primaryType');
@@ -142,7 +167,7 @@ export class AemHttpClient {
         this.breaker.recordSuccess();
         return result;
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
+        if (axios.isAxiosError(error) && isGraniteCsrfFailure(error)) {
           this.csrfToken = undefined;
           const retryToken = await this.ensureCsrf();
           try {
@@ -150,11 +175,15 @@ export class AemHttpClient {
             this.breaker.recordSuccess();
             return retried;
           } catch (retryError) {
-            this.breaker.recordFailure();
+            if (shouldTripBreaker(retryError, true)) {
+              this.breaker.recordFailure();
+            }
             throw this.mapError(retryError, method, path, true);
           }
         }
-        this.breaker.recordFailure();
+        if (shouldTripBreaker(error)) {
+          this.breaker.recordFailure();
+        }
         throw this.mapError(error, method, path);
       }
     });
@@ -264,6 +293,43 @@ export class AemHttpClient {
   }
 }
 
+function isGraniteCsrfFailure(error: AxiosError): boolean {
+  if (error.response?.status !== 403) {
+    return false;
+  }
+  const data = error.response.data;
+  const body = typeof data === 'string' ? data : data == null ? '' : JSON.stringify(data);
+  const headers = error.response.headers ?? {};
+  const headerText = Object.entries(headers)
+    .map(([key, value]) => `${key}:${String(value)}`)
+    .join('\n');
+  return /csrf/i.test(body) || /csrf/i.test(headerText);
+}
+
+function shouldTripBreaker(error: unknown, csrfRetryFailed = false): boolean {
+  if (!axios.isAxiosError(error)) {
+    return true;
+  }
+  const status = error.response?.status;
+  if (status == null) {
+    return true;
+  }
+  if (csrfRetryFailed && status === 403 && isGraniteCsrfFailure(error)) {
+    return true;
+  }
+  if (
+    status === 400 ||
+    status === 401 ||
+    status === 403 ||
+    status === 404 ||
+    status === 409 ||
+    status === 413
+  ) {
+    return false;
+  }
+  return status >= 500;
+}
+
 function extractCsrfToken(data: unknown): string | undefined {
   if (typeof data === 'string' && data.trim()) {
     return data.trim();
@@ -277,4 +343,18 @@ function extractCsrfToken(data: unknown): string | undefined {
     return (data as { token: string }).token;
   }
   return undefined;
+}
+
+function normalizeHeaders(headers: unknown): Record<string, string> {
+  const result: Record<string, string> = {};
+  if (!headers || typeof headers !== 'object') {
+    return result;
+  }
+  for (const [key, value] of Object.entries(headers as Record<string, unknown>)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    result[key.toLowerCase()] = Array.isArray(value) ? String(value[0]) : String(value);
+  }
+  return result;
 }

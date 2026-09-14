@@ -29,9 +29,13 @@ describe('HTTP auth and MCP surface', () => {
     expect(names).toContain('createPage');
   });
 
-  it('rejects invalid Host headers', async () => {
+  it('rejects invalid Host headers on authenticated routes', async () => {
     const { connector } = makeConnector();
     const app = createApp(makeConfig(), silentLogger(), connector);
-    await request(app).get('/health/live').set('Host', 'evil.example').expect(403);
+    await request(app)
+      .get('/api/methods')
+      .set('Host', 'evil.example')
+      .set('x-api-key', 'test-api-key')
+      .expect(403);
   });
 });

@@ -10,6 +10,9 @@ export interface PathPolicy {
   maxDepth: number;
 }
 
+/**
+ * Decode, reject traversal/selectors, and return a normalized absolute JCR path.
+ */
 export function canonicalizeJcrPath(raw: string): string {
   if (!raw || typeof raw !== 'string') {
     throw new AemError({

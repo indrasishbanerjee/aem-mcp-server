@@ -50,13 +50,26 @@ export function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
+/** Sling JSON may be a URI array, `{uri}[]`, or a node map. */
+export function slingCollection(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  const record = asRecord(value);
+  const keyed = record['{uri}[]'] ?? record['{name}[]'];
+  if (Array.isArray(keyed)) {
+    return keyed;
+  }
+  return [];
+}
+
 export async function ensureExists(
   client: AemHttpClient,
   path: string,
   label: string
 ): Promise<Record<string, unknown>> {
   try {
-    return asRecord(await client.get(`${path}.json`, { ':depth': 1 }));
+    return asRecord(await client.getJson(path, 1));
   } catch (error) {
     if (error instanceof AemError && error.code === AEM_ERROR_CODES.RESOURCE_NOT_FOUND) {
       throw new AemError({
