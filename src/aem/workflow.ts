@@ -2,7 +2,14 @@ import type { AppConfig } from '../config.js';
 import { AEM_ERROR_CODES, AemError } from '../errors.js';
 import { assertAllowedPath, canonicalizeJcrPath, isPrefix } from '../security/paths.js';
 import type { AemHttpClient } from './client.js';
-import { asRecord, clampLimit, ok, requirePath, slingCollection, type SuccessEnvelope } from './util.js';
+import {
+  asRecord,
+  clampLimit,
+  ok,
+  requirePath,
+  slingCollection,
+  type SuccessEnvelope
+} from './util.js';
 
 const WORKFLOW_INSTANCE_ROOTS = ['/var/workflow/instances', '/etc/workflow/instances'];
 const WORKFLOW_MODEL_ROOTS = ['/var/workflow/models', '/etc/workflow/models'];

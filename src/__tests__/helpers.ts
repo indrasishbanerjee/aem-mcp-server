@@ -93,8 +93,11 @@ export class FakeAuthor {
   };
   private postErrors: Array<{ status: number; data: unknown; headers?: Record<string, string> }> =
     [];
-  private postSuccesses: Array<{ data: unknown; headers?: Record<string, string>; status?: number }> =
-    [];
+  private postSuccesses: Array<{
+    data: unknown;
+    headers?: Record<string, string>;
+    status?: number;
+  }> = [];
 
   failNextPost(status: number, data: unknown, headers?: Record<string, string>): void {
     this.postErrors.push({ status, data, headers });
@@ -143,7 +146,9 @@ export class FakeAuthor {
         if (path.includes('/bin/wcm/versions.json')) {
           return {
             data: {
-              versions: [{ versionName: '1.0', label: 'mcp-live', created: '2026-01-01T00:00:00.000Z' }]
+              versions: [
+                { versionName: '1.0', label: 'mcp-live', created: '2026-01-01T00:00:00.000Z' }
+              ]
             }
           };
         }

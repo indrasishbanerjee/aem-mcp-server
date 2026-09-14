@@ -168,7 +168,9 @@ describe('Sling JSON numeric selectors', () => {
     });
     const { connector } = makeConnector(author);
     const result = await connector.discovery.fetchSites();
-    const get = author.calls.find(call => call.method === 'GET' && String(call.path).includes('/content'));
+    const get = author.calls.find(
+      call => call.method === 'GET' && String(call.path).includes('/content')
+    );
     expect(get?.path).toBe('/content.2.json');
     expect(result.data.sites.some(site => site.name === 'we-retail')).toBe(true);
   });
@@ -274,9 +276,9 @@ describe('replicate agent errors', () => {
       '<html>Replication failed: Connection refused to http://localhost:4503/bin/receive</html>'
     );
     const { connector } = makeConnector(author);
-    await expect(
-      connector.pages.activatePage({ pagePath: '/content/mysite/en' })
-    ).rejects.toThrow(/replicat|4503|refused/i);
+    await expect(connector.pages.activatePage({ pagePath: '/content/mysite/en' })).rejects.toThrow(
+      /replicat|4503|refused/i
+    );
   });
 
   it('returns success with a warning when Author reports success without queue details', async () => {

@@ -309,7 +309,9 @@ describe('HTTP disabled tools', () => {
       .set('x-api-key', 'test-api-key')
       .send({ probe: true });
     expect(response.status).toBe(403);
-    expect(response.body.error?.code ?? response.body.data?.code).toBe(AEM_ERROR_CODES.TOOL_DISABLED);
+    expect(response.body.error?.code ?? response.body.data?.code).toBe(
+      AEM_ERROR_CODES.TOOL_DISABLED
+    );
     expect(response.body.error?.statusCode ?? response.body.data?.statusCode).toBe(403);
   });
 });

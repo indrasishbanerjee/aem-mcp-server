@@ -9,9 +9,7 @@ export class DiscoveryOperations {
   ) {}
 
   async fetchSites(): Promise<SuccessEnvelope<{ sites: Array<Record<string, unknown>> }>> {
-    const data = asRecord(
-      await this.client.getJson(this.config.aem.sitesRoot, 2)
-    );
+    const data = asRecord(await this.client.getJson(this.config.aem.sitesRoot, 2));
     const sites: Array<Record<string, unknown>> = [];
     for (const [key, value] of Object.entries(data)) {
       if (systemKey(key) || !value || typeof value !== 'object') {

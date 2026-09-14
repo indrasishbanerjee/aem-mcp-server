@@ -153,7 +153,9 @@ export class PageOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; textContent: Array<Record<string, unknown>> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(await this.client.getJson(pagePath, clampDepth(undefined, this.config)));
+    const content = asRecord(
+      await this.client.getJson(pagePath, clampDepth(undefined, this.config))
+    );
     const textContent: Array<Record<string, unknown>> = [];
     walk(content, 'jcr:content', (node, path) => {
       if (node.text || node['jcr:title'] || node['jcr:description']) {
@@ -172,7 +174,9 @@ export class PageOperations {
     pagePathRaw: string
   ): Promise<SuccessEnvelope<{ pagePath: string; images: Array<Record<string, unknown>> }>> {
     const pagePath = requirePath(pagePathRaw, this.config);
-    const content = asRecord(await this.client.getJson(pagePath, clampDepth(undefined, this.config)));
+    const content = asRecord(
+      await this.client.getJson(pagePath, clampDepth(undefined, this.config))
+    );
     const images: Array<Record<string, unknown>> = [];
     walk(content, 'jcr:content', (node, path) => {
       if (node.fileReference || node.src) {
