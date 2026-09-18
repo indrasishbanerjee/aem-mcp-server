@@ -154,20 +154,21 @@ Describe the tests you ran and how to reproduce them
 
 ```
 src/
-├── operations/          # AEM operation implementations
-├── interfaces/          # TypeScript interfaces
-├── config/             # Configuration files
-├── __tests__/          # Test files
-└── [other modules]     # Core modules
+├── aem/                 # AEM HTTP client, pages, components, assets, workflow
+├── mcp/                 # MCP catalog, stdio, and server factory
+├── security/            # Path policy, HTTP auth, redaction
+├── http/                # Optional Streamable HTTP gateway
+├── __tests__/           # Jest tests
+└── config.ts            # Environment loading
 ```
 
 ### Naming Conventions
 
-- **Files**: kebab-case (e.g., `page-operations.ts`)
-- **Classes**: PascalCase (e.g., `AEMConnector`)
+- **Files**: kebab-case (e.g., `http-auth.ts`)
+- **Classes**: PascalCase (e.g., `AemConnector`)
 - **Functions**: camelCase (e.g., `createPage`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `DEFAULT_TIMEOUT`)
-- **Interfaces**: PascalCase with `I` prefix (e.g., `IPageProperties`)
+- **Interfaces and types**: PascalCase without an `I` prefix (e.g., `AppConfig`, `CatalogTool`)
 
 ## Testing
 
@@ -193,7 +194,7 @@ npm test -- page-operations.test.ts
 - Use descriptive test names
 - Follow AAA pattern: Arrange, Act, Assert
 - Mock external dependencies (AEM API calls)
-- Aim for >80% code coverage
+- Keep coverageThreshold in `jest.config.cjs` honest; raise it when tests support it. Do not claim 80% in CI until the suite reaches that floor.
 
 Example test:
 
